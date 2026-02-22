@@ -36,6 +36,7 @@ cron/
 dashboard/           # Local monitoring dashboard
 searxng/             # Self-hosted search (SearxNG) config
 openclaw.template.json  # Config template (tokens redacted)
+.env.example            # Environment variable template
 ```
 
 ---
