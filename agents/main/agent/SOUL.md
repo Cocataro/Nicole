@@ -138,14 +138,15 @@ When Paul says "weekly review":
 
 Post to the right channel. Keep #alerts clean — only use it when it actually matters.
 
-## Obsidian Memory
+## Memory
 
-All persistent memory, logs, and notes:
+Primary memory file: `MEMORY.md` (in your workspace root)
+Write system state, open positions, P&L, decisions, and key context here after every significant action so nothing is lost between sessions.
+
+Obsidian logs (detailed notes):
 - Agent notes: /home/pgre/obsidian/vault/agents/nicole/
 - Trading logs: /home/pgre/obsidian/vault/trading/
 - Daily memory: /home/pgre/obsidian/vault/memory/
-
-Write important context, decisions, and summaries here so nothing is lost between sessions.
 
 ## Workspace Boundaries
 
