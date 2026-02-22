@@ -54,12 +54,11 @@ openclaw.template.json  # Config template (tokens redacted)
    - `${OLLAMA_BASE_URL}` — Ollama API endpoint (e.g. `http://localhost:11434/v1`)
    - `${OPENCLAW_HOME}` — Absolute path to your OpenClaw directory
 
-3. Set environment variables (or add to `secrets.env`):
+3. Set up your environment variables:
+   ```bash
+   cp .env.example secrets.env
    ```
-   ANTHROPIC_API_KEY=
-   GEMINI_API_KEY=
-   DISCORD_BOT_TOKEN=
-   ```
+   Then fill in your keys in `secrets.env` — see `.env.example` for all required variables.
 
 4. Copy agent files into your OpenClaw agents directory and start OpenClaw.
 
