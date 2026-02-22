@@ -1,0 +1,45 @@
+# Secrets and credentials
+secrets.env
+credentials/
+
+# Auth tokens (per-agent)
+agents/*/agent/auth.json
+agents/*/agent/auth-profiles.json
+agents/*/agent/models.json
+
+# Runtime config (contains embedded tokens)
+openclaw.json
+
+# Session history / conversation logs
+agents/*/sessions/
+
+# Cron run history
+cron/runs/
+
+# Device pairing and identity
+devices/
+identity/
+
+# Subagent runtime data
+subagents/runs.json
+
+# Telegram state
+telegram/
+
+# Workspace (embedded git repo)
+workspace/
+
+# Backups
+backups/
+*.bak
+*.bak.*
+
+# Logs
+logs/
+
+# Runtime / cache
+update-check.json
+delivery-queue/
+
+# Claude internal
+.claude/

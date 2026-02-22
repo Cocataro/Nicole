@@ -1,0 +1,15 @@
+[Unit]
+Description=OpenClaw Trading Dashboard
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/pgre/.openclaw/dashboard
+ExecStart=/usr/bin/node /home/pgre/.openclaw/dashboard/server.js
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

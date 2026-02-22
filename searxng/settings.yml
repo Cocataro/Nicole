@@ -1,0 +1,36 @@
+use_default_settings: true
+
+server:
+  secret_key: "GRYDiTX7AO5fHruOt4SwnECDmA8yTwtxHRmugMSsOPA"
+  bind_address: "0.0.0.0"
+  port: 8080
+  base_url: false
+  limiter: false
+
+search:
+  safe_search: 0
+  autocomplete: "duckduckgo"
+  default_lang: "en-US"
+  formats:
+    - html
+    - json
+
+enabled_plugins:
+  - 'Hash plugin'
+  - 'Self Information'
+  - 'Tracker URL remover'
+
+redis:
+  url: redis://redis:6379/0
+
+ui:
+  static_use_hash: true
+  query_in_title: true
+
+engines:
+  - name: duckduckgo
+    disabled: false
+  - name: bing
+    disabled: false
+  - name: wikipedia
+    disabled: false

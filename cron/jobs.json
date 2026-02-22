@@ -1,0 +1,288 @@
+{
+  "version": 1,
+  "jobs": [
+    {
+      "jobId": "heartbeat-hourly-gemini",
+      "id": "heartbeat-hourly-gemini",
+      "name": "Hourly heartbeat + P&L check",
+      "description": "Hourly heartbeat via Gemini Flash; quiet hours 23:00-07:00 America/Denver",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 7-22 * * *",
+        "tz": "America/Denver",
+        "staggerMs": 0
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "next-heartbeat",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Read HEARTBEAT.md if it exists (workspace context). Follow it strictly. Do not infer or repeat old tasks from prior chats. If nothing needs attention, reply exactly HEARTBEAT_OK. Keep reply short when action is needed.",
+        "model": "google/gemini-3-flash-preview"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram",
+        "to": "7211384949",
+        "bestEffort": true
+      },
+      "createdAt": "2026-02-20T17:16:00Z",
+      "updatedAt": "2026-02-20T17:16:00Z",
+      "state": {
+        "nextRunAtMs": 1771772400000,
+        "lastRunAtMs": 1771768800022,
+        "lastStatus": "error",
+        "lastDurationMs": 87,
+        "consecutiveErrors": 1,
+        "lastError": "model not allowed: google/gemini-3-flash-preview"
+      },
+      "updatedAtMs": 1771768800109
+    },
+    {
+      "jobId": "max-weekly-calibration",
+      "id": "max-weekly-calibration",
+      "name": "Max weekly calibration review",
+      "description": "Weekly calibration and performance loop update for Aria/Reed/Sage/Max",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 9 * * 1",
+        "tz": "America/Denver",
+        "staggerMs": 0
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "next-heartbeat",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Run weekly crypto trading review for BTC-USD and ETH-USD. Update WEEKLY_REVIEW.md with P&L, win rate, what worked, what didn't. Report to Nicole.",
+        "model": "anthropic/claude-haiku-4-5"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram",
+        "to": "7211384949",
+        "bestEffort": true
+      },
+      "createdAt": "2026-02-20T19:25:26Z",
+      "updatedAt": "2026-02-20T19:25:26Z",
+      "state": {
+        "nextRunAtMs": 1771862400000
+      },
+      "updatedAtMs": 1771719562991
+    },
+    {
+      "jobId": "hana-weekly-prospector",
+      "id": "hana-weekly-prospector",
+      "name": "Hana weekly coin universe scan",
+      "description": "Sunday morning Prospector scan — pulls top Coinbase USD spot markets, backtests all four strategies per coin, routes Tier 1/2 coins to the correct trader watchlists, reports to Nicole",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 7 * * 0",
+        "tz": "America/Denver",
+        "staggerMs": 0
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "next-heartbeat",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "You are Hana, backtesting and strategy validation specialist. Run the weekly Prospector coin universe scan. Read the full skill at /home/pgre/.openclaw/workspace/skills/the-prospector/SKILL.md and follow every step. Pull all active Coinbase USD spot markets, filter by liquidity, pull 6 months of real 1-hour candles per coin from the Coinbase API, backtest all four strategies (The Sniper, EMA Crossover, RSI Reversal, VWAP Reversion) against each coin, score each coin on its best-performing strategy, route Tier 1 and Tier 2 coins to the correct trader's WATCHLIST.md pending section, save the full report to /home/pgre/obsidian/vault/trading/backtests/, post a one-paragraph summary to Discord #market-research, and deliver full ranked results to Nicole. Never simulate or fabricate candle data — real API data only.",
+        "model": "google/gemini-3-flash-preview"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram",
+        "to": "7211384949",
+        "bestEffort": true
+      },
+      "createdAt": "2026-02-22T00:00:00Z",
+      "updatedAt": "2026-02-22T00:00:00Z",
+      "state": {
+        "nextRunAtMs": 1772373600000,
+        "lastRunAtMs": 1771768800109,
+        "lastStatus": "error",
+        "lastDurationMs": 5,
+        "lastError": "model not allowed: google/gemini-3-flash-preview",
+        "consecutiveErrors": 1
+      },
+      "updatedAtMs": 1771768800114
+    },
+    {
+      "jobId": "dylon-weekly-risk-summary",
+      "id": "dylon-weekly-risk-summary",
+      "name": "Dylon weekly risk summary",
+      "description": "Sunday 8am — Dylon compiles full week risk health report and sends to Nicole regardless of light status",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 8 * * 0",
+        "tz": "America/Denver",
+        "staggerMs": 0
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "next-heartbeat",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "You are Dylon, risk management agent. Run the weekly risk summary. Use the-accountant to get current bankroll, exposure, and all open positions. Compile the full Weekly Risk Summary as defined in your SOUL.md — covering bankroll trajectory, peak drawdown, exposure levels, any Red or Yellow events this week, interventions made, and current risk status heading into next week. Save the report to /home/pgre/obsidian/vault/trading/risk-log/YYYY-MM-DD-weekly-risk-summary.md and send the full report to Nicole. This runs every Sunday regardless of light status — always send, never skip.",
+        "model": "google/gemini-3-flash-preview"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram",
+        "to": "7211384949",
+        "bestEffort": true
+      },
+      "createdAt": "2026-02-22T00:00:00Z",
+      "updatedAt": "2026-02-22T00:00:00Z",
+      "state": {
+        "nextRunAtMs": 1771772400000
+      }
+    },
+    {
+      "jobId": "nicole-sunday-briefing",
+      "id": "nicole-sunday-briefing",
+      "name": "Nicole Sunday morning briefing",
+      "description": "Sunday 9am — Nicole collects Hana's Prospector report and Dylon's risk summary, runs the Gatekeeper, and sends Paul a concise Sunday briefing",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 9 * * 0",
+        "tz": "America/Denver",
+        "staggerMs": 0
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "next-heartbeat",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "You are Nicole. Run the Sunday morning briefing workflow as defined in your HEARTBEAT.md. Step 1: find today's Prospector scan in /home/pgre/obsidian/vault/trading/backtests/. Step 2: find today's risk summary in /home/pgre/obsidian/vault/trading/risk-log/. Step 3: run the-gatekeeper skill at /home/pgre/.openclaw/workspace/skills/the-gatekeeper/SKILL.md — evaluate all pending coins across all four trader WATCHLIST.md files (Max, Leo, Zara, Kai), identify promotions, expire stale entries. Step 4: compile a short Sunday briefing for Paul covering risk status, coin scan results, and any promotion recommendations. Step 5: post the briefing to Discord #nicole. Wait for Paul's response before executing any watchlist changes.",
+        "model": "google/gemini-3-flash-preview"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram",
+        "to": "7211384949",
+        "bestEffort": true
+      },
+      "createdAt": "2026-02-22T00:00:00Z",
+      "updatedAt": "2026-02-22T00:00:00Z",
+      "state": {
+        "nextRunAtMs": 1771776000000
+      }
+    },
+    {
+      "jobId": "leo-weekly-calibration",
+      "id": "leo-weekly-calibration",
+      "name": "Leo weekly calibration review",
+      "description": "Monday 9:30am — Leo runs weekly review and calibration for EMA Crossover performance",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 9 * * 1",
+        "tz": "America/Denver",
+        "staggerMs": 0
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "next-heartbeat",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "You are Leo, EMA Crossover trading specialist. Run your weekly review. Update WEEKLY_REVIEW.md with this week's P&L, win rate, number of trades, EMA signal quality, and what worked or didn't. Update WEEKLY_CALIBRATION.md with agent input quality and any process notes. Save to /home/pgre/obsidian/vault/trading/weekly-reviews/leo/YYYY-MM-DD-weekly-review.md. Report summary to Nicole.",
+        "model": "ollama/qwen2.5:14b"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram",
+        "to": "7211384949",
+        "bestEffort": true
+      },
+      "createdAt": "2026-02-22T00:00:00Z",
+      "updatedAt": "2026-02-22T00:00:00Z",
+      "state": {
+        "nextRunAtMs": 1771864200000
+      }
+    },
+    {
+      "jobId": "zara-weekly-calibration",
+      "id": "zara-weekly-calibration",
+      "name": "Zara weekly calibration review",
+      "description": "Monday 10am — Zara runs weekly review and calibration for RSI Reversal performance",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 10 * * 1",
+        "tz": "America/Denver",
+        "staggerMs": 0
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "next-heartbeat",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "You are Zara, RSI Reversal trading specialist. Run your weekly review. Update WEEKLY_REVIEW.md with this week's P&L, win rate, number of trades, 200 EMA filter effectiveness, RSI entry quality, and what worked or didn't. Update WEEKLY_CALIBRATION.md with agent input quality and any process notes. Save to /home/pgre/obsidian/vault/trading/weekly-reviews/zara/YYYY-MM-DD-weekly-review.md. Report summary to Nicole.",
+        "model": "ollama/qwen2.5:14b"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram",
+        "to": "7211384949",
+        "bestEffort": true
+      },
+      "createdAt": "2026-02-22T00:00:00Z",
+      "updatedAt": "2026-02-22T00:00:00Z",
+      "state": {
+        "nextRunAtMs": 1771866000000
+      }
+    },
+    {
+      "jobId": "kai-weekly-calibration",
+      "id": "kai-weekly-calibration",
+      "name": "Kai weekly calibration review",
+      "description": "Monday 10:30am — Kai runs weekly review and calibration for VWAP Reversion performance",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 10 * * 1",
+        "tz": "America/Denver",
+        "staggerMs": 0
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "next-heartbeat",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "You are Kai, VWAP Reversion trading specialist. Run your weekly review. Update WEEKLY_REVIEW.md with this week's P&L, win rate, number of trades, time gate discipline, VWAP signal quality, and what worked or didn't. Update WEEKLY_CALIBRATION.md with agent input quality and any process notes. Save to /home/pgre/obsidian/vault/trading/weekly-reviews/kai/YYYY-MM-DD-weekly-review.md. Report summary to Nicole.",
+        "model": "ollama/qwen2.5:14b"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram",
+        "to": "7211384949",
+        "bestEffort": true
+      },
+      "createdAt": "2026-02-22T00:00:00Z",
+      "updatedAt": "2026-02-22T00:00:00Z",
+      "state": {
+        "nextRunAtMs": 1771867800000
+      }
+    },
+    {
+      "jobId": "trader-cycle",
+      "id": "trader-cycle",
+      "name": "Crypto Trader Cycle (24/7)",
+      "enabled": false,
+      "schedule": {
+        "kind": "every",
+        "everyMs": 600000
+      },
+      "sessionTarget": "isolated",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute crypto trading cycle: scan markets, check open positions, execute trades based on strategy.",
+        "model": "google/gemini-3-flash-preview"
+      },
+      "delivery": {
+        "mode": "none"
+      },
+      "createdAt": "2026-02-22T04:29:35Z",
+      "updatedAt": "2026-02-22T04:29:35Z",
+      "state": {}
+    }
+  ]
+}
