@@ -283,8 +283,8 @@
       "sessionTarget": "isolated",
       "payload": {
         "kind": "agentTurn",
-        "message": "Execute crypto trading cycle: scan markets, check open positions, execute trades based on strategy.",
-        "model": "google/gemini-3-flash-preview"
+        "message": "You are Max, The Sniper trading specialist. Paper trade all coins in Section A of your WATCHLIST.md. Read your WATCHLIST.md to confirm which coins are currently authorized. Execute best available entry based on risk gate (max 2% loss per trade, max 30% total exposure). Hold 4-24h targets. Close losers at stop, winners at target or reversal signal. Check Dylon risk gate before any entry. Keep it disciplined.",
+        "model": "ollama/qwen2.5:14b"
       },
       "delivery": {
         "mode": "none"
