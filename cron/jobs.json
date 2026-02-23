@@ -361,6 +361,68 @@
       "createdAt": "2026-02-23T00:00:00Z",
       "updatedAt": "2026-02-23T00:00:00Z",
       "state": {}
+    },
+    {
+      "jobId": "hana-weekly-performance-review",
+      "id": "hana-weekly-performance-review",
+      "name": "Hana weekly performance analysis",
+      "description": "Monday 8am — Hana analyses all four traders' trade logs, compares strategy predictions vs actual outcomes, identifies patterns, sends structured findings to Nicole before trader calibrations begin",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 8 * * 1",
+        "tz": "America/Denver",
+        "staggerMs": 0
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "next-heartbeat",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "You are Hana, backtesting and strategy validation specialist. Run the weekly performance analysis as defined in your SOUL.md. Pull all four traders' TRADE_LOG.md files (Max, Leo, Zara, Kai) and closed trade records from /home/pgre/obsidian/vault/trading/trade-log/. For each closed trade this week, compare the Strategy prediction logged at entry vs What actually happened logged at exit. Group findings by strategy, coin, and market condition. Identify patterns with 3 or more data points only — no data, no finding. Write the full analysis to /home/pgre/obsidian/vault/trading/performance-analysis/YYYY-MM-DD-weekly-analysis.md. Send structured findings with suggested rule changes to Nicole. Confidence levels: Low (3–5 trades), Medium (6–10), High (10+). Never invent insights.",
+        "model": "anthropic/claude-haiku-4-5"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram",
+        "to": "7211384949",
+        "bestEffort": true
+      },
+      "createdAt": "2026-02-23T00:00:00Z",
+      "updatedAt": "2026-02-23T00:00:00Z",
+      "state": {
+        "nextRunAtMs": 1771858800000
+      }
+    },
+    {
+      "jobId": "nicole-strategy-update",
+      "id": "nicole-strategy-update",
+      "name": "Nicole weekly strategy update",
+      "description": "Monday noon — Nicole reviews Hana's performance findings and all trader calibration reports, implements approved rule changes to strategy files, logs all changes",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 12 * * 1",
+        "tz": "America/Denver",
+        "staggerMs": 0
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "next-heartbeat",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "You are Nicole. Run the weekly strategy update as defined in your SOUL.md Strategy Update Protocol. Read today's performance analysis from /home/pgre/obsidian/vault/trading/performance-analysis/. Review all trader WEEKLY_CALIBRATION.md files. For each of Hana's findings: Low confidence (3–5 trades) — note and watch, no change. Medium confidence (6–10 trades) — draft the change and message Paul for approval before implementing. High confidence (10+ trades) — implement directly by editing the relevant STRATEGY.md, then notify Paul. Log all changes (or decisions not to change) to /home/pgre/obsidian/vault/trading/strategy-changes/YYYY-MM-DD-changes.md. Post a brief summary to Discord #market-research. Data drives changes — nothing else.",
+        "model": "anthropic/claude-haiku-4-5"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram",
+        "to": "7211384949",
+        "bestEffort": true
+      },
+      "createdAt": "2026-02-23T00:00:00Z",
+      "updatedAt": "2026-02-23T00:00:00Z",
+      "state": {
+        "nextRunAtMs": 1771873200000
+      }
     }
   ]
 }
