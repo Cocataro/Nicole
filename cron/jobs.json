@@ -29,14 +29,13 @@
       "createdAt": "2026-02-20T17:16:00Z",
       "updatedAt": "2026-02-20T17:16:00Z",
       "state": {
-        "nextRunAtMs": 1771772400000,
-        "lastRunAtMs": 1771768800022,
-        "lastStatus": "error",
-        "lastDurationMs": 87,
-        "consecutiveErrors": 1,
-        "lastError": "model not allowed: google/gemini-3-flash-preview"
+        "nextRunAtMs": 1771858800000,
+        "lastRunAtMs": 1771855200019,
+        "lastStatus": "ok",
+        "lastDurationMs": 32368,
+        "consecutiveErrors": 0
       },
-      "updatedAtMs": 1771768800109
+      "updatedAtMs": 1771855232387
     },
     {
       "jobId": "max-weekly-calibration",
@@ -54,7 +53,7 @@
       "wakeMode": "next-heartbeat",
       "payload": {
         "kind": "agentTurn",
-        "message": "Run weekly crypto trading review for BTC-USD and ETH-USD. Update WEEKLY_REVIEW.md with P&L, win rate, what worked, what didn't. Report to Nicole.",
+        "message": "You are Max, The Sniper trading specialist. Run your weekly review. Update WEEKLY_REVIEW.md with this week's P&L, win rate, number of trades, signal quality across all active pairs, and what worked or didn't. Update WEEKLY_CALIBRATION.md with agent input quality and any process notes. Save to /home/pgre/obsidian/vault/trading/weekly-reviews/max/YYYY-MM-DD-weekly-review.md. Report summary to Nicole.",
         "model": "anthropic/claude-haiku-4-5"
       },
       "delivery": {
@@ -87,7 +86,7 @@
       "payload": {
         "kind": "agentTurn",
         "message": "You are Hana, backtesting and strategy validation specialist. Run the weekly Prospector coin universe scan. Read the full skill at /home/pgre/.openclaw/workspace/skills/the-prospector/SKILL.md and follow every step. Pull all active Coinbase USD spot markets, filter by liquidity, pull 6 months of real 1-hour candles per coin from the Coinbase API, backtest all four strategies (The Sniper, EMA Crossover, RSI Reversal, VWAP Reversion) against each coin, score each coin on its best-performing strategy, route Tier 1 and Tier 2 coins to the correct trader's WATCHLIST.md pending section, save the full report to /home/pgre/obsidian/vault/trading/backtests/, post a one-paragraph summary to Discord #market-research, and deliver full ranked results to Nicole. Never simulate or fabricate candle data — real API data only.",
-        "model": "google/gemini-3-flash-preview"
+        "model": "anthropic/claude-haiku-4-5"
       },
       "delivery": {
         "mode": "announce",
@@ -135,8 +134,13 @@
       "createdAt": "2026-02-22T00:00:00Z",
       "updatedAt": "2026-02-22T00:00:00Z",
       "state": {
-        "nextRunAtMs": 1771772400000
-      }
+        "nextRunAtMs": 1772377200000,
+        "lastRunAtMs": 1771772411970,
+        "lastStatus": "ok",
+        "lastDurationMs": 66618,
+        "consecutiveErrors": 0
+      },
+      "updatedAtMs": 1771772478588
     },
     {
       "jobId": "nicole-sunday-briefing",
@@ -166,8 +170,13 @@
       "createdAt": "2026-02-22T00:00:00Z",
       "updatedAt": "2026-02-22T00:00:00Z",
       "state": {
-        "nextRunAtMs": 1771776000000
-      }
+        "nextRunAtMs": 1772380800000,
+        "lastRunAtMs": 1771776016935,
+        "lastStatus": "ok",
+        "lastDurationMs": 69714,
+        "consecutiveErrors": 0
+      },
+      "updatedAtMs": 1771776086649
     },
     {
       "jobId": "leo-weekly-calibration",
@@ -282,6 +291,75 @@
       },
       "createdAt": "2026-02-22T04:29:35Z",
       "updatedAt": "2026-02-22T04:29:35Z",
+      "state": {}
+    },
+    {
+      "jobId": "leo-trader-cycle",
+      "id": "leo-trader-cycle",
+      "name": "Leo EMA Crossover Trader Cycle",
+      "description": "Every 10 minutes — Leo checks assigned coins for EMA crossover setups, manages open positions, executes entries/exits per strategy rules. Disabled until coins assigned via Gatekeeper.",
+      "enabled": false,
+      "schedule": {
+        "kind": "every",
+        "everyMs": 600000
+      },
+      "sessionTarget": "isolated",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "You are Leo, EMA Crossover trading specialist. Run your trading cycle. Read STRATEGY.md and WATCHLIST.md. Check all Section A coins for valid EMA crossover setups. Check all open positions and apply exit rules. Request Aria and Reed briefs for any potential entries. Check Dylon risk gate before any entry. Execute any valid entries or exits. Update TRADE_LOG.md and TRADE_STATE.md. If bankroll drops below $25 stop and report to Nicole. Keep it disciplined — process over outcome.",
+        "model": "ollama/qwen2.5:14b"
+      },
+      "delivery": {
+        "mode": "none"
+      },
+      "createdAt": "2026-02-23T00:00:00Z",
+      "updatedAt": "2026-02-23T00:00:00Z",
+      "state": {}
+    },
+    {
+      "jobId": "zara-trader-cycle",
+      "id": "zara-trader-cycle",
+      "name": "Zara RSI Reversal Trader Cycle",
+      "description": "Every 10 minutes — Zara checks assigned coins for RSI reversal setups, manages open positions, executes entries/exits per strategy rules. Disabled until coins assigned via Gatekeeper.",
+      "enabled": false,
+      "schedule": {
+        "kind": "every",
+        "everyMs": 600000
+      },
+      "sessionTarget": "isolated",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "You are Zara, RSI Reversal trading specialist. Run your trading cycle. Read STRATEGY.md and WATCHLIST.md. Check all Section A coins for valid RSI reversal setups on the 4-hour chart. Confirm price is above 200 EMA before any entry. Check all open positions and apply exit rules. Request Aria and Reed briefs for any potential entries. Check Dylon risk gate before any entry. Execute any valid entries or exits. Update TRADE_LOG.md and TRADE_STATE.md. If bankroll drops below $25 stop and report to Nicole. Stay disciplined — no chasing, no guessing.",
+        "model": "ollama/qwen2.5:14b"
+      },
+      "delivery": {
+        "mode": "none"
+      },
+      "createdAt": "2026-02-23T00:00:00Z",
+      "updatedAt": "2026-02-23T00:00:00Z",
+      "state": {}
+    },
+    {
+      "jobId": "kai-trader-cycle",
+      "id": "kai-trader-cycle",
+      "name": "Kai VWAP Reversion Trader Cycle",
+      "description": "Every 10 minutes — Kai checks assigned coins for VWAP reversion setups during active hours, manages open positions, executes entries/exits per strategy rules. Disabled until coins assigned via Gatekeeper.",
+      "enabled": false,
+      "schedule": {
+        "kind": "every",
+        "everyMs": 600000
+      },
+      "sessionTarget": "isolated",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "You are Kai, VWAP Reversion trading specialist. Run your trading cycle. Read STRATEGY.md and WATCHLIST.md. First check current UTC time — if outside 08:00-20:00 UTC, exit immediately with no action. Check all Section A coins for valid VWAP reversion setups on the 1-hour chart. Check all open positions and apply exit rules including the time stop. Request Aria and Reed briefs for any potential entries. Check Dylon risk gate before any entry. Execute any valid entries or exits. Update TRADE_LOG.md and TRADE_STATE.md. If bankroll drops below $25 stop and report to Nicole. Fast and focused — the setup either qualifies or it doesn't.",
+        "model": "ollama/qwen2.5:14b"
+      },
+      "delivery": {
+        "mode": "none"
+      },
+      "createdAt": "2026-02-23T00:00:00Z",
+      "updatedAt": "2026-02-23T00:00:00Z",
       "state": {}
     }
   ]
