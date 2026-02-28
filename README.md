@@ -29,6 +29,17 @@ agents/
     agent/
       SOUL.md        # Agent identity, personality, and operating rules
       TOOLS.md       # Tools and capabilities available to the agent
+skills/
+  the-sniper/        # Max's breakout trading strategy
+  ema-crossover/     # Leo's 9/21 EMA trend following strategy
+  rsi-reversal/      # Zara's oversold dip buying strategy
+  vwap-reversion/    # Kai's intraday mean reversion strategy
+  the-gatekeeper/    # Nicole's watchlist promotion protocol
+  the-prospector/    # Hana's weekly coin universe scan
+  the-comparator/    # Hana's head-to-head strategy scorecard
+  the-accountant/    # Portfolio state reader (shared tool)
+  the-historian/     # Historical data fetcher and analyzer
+  the-commander/     # Nicole's agent orchestration methodology
 canvas/              # OpenClaw canvas UI
 completions/         # Shell completions (bash, zsh, fish, PowerShell)
 cron/
@@ -61,7 +72,11 @@ openclaw.template.json  # Config template (tokens redacted)
    ```
    Then fill in your keys in `secrets.env` — see `.env.example` for all required variables.
 
-4. Copy agent files into your OpenClaw agents directory and start OpenClaw.
+4. Copy agent files and skills into your OpenClaw workspace and start OpenClaw:
+   ```bash
+   cp -r agents/* ~/.openclaw/agents/
+   cp -r skills/* ~/.openclaw/workspace/skills/
+   ```
 
 ---
 
