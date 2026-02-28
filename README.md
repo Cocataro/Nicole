@@ -40,6 +40,14 @@ skills/
   the-accountant/    # Portfolio state reader (shared tool)
   the-historian/     # Historical data fetcher and analyzer
   the-commander/     # Nicole's agent orchestration methodology
+templates/
+  HEARTBEAT.md       # Nicole's heartbeat check protocol
+  MEMORY.md          # Nicole's persistent state (initial template)
+  agents/
+    max/             # Max's initial workspace files (WATCHLIST, TRADE_STATE, TRADE_LOG)
+    leo/             # Leo's initial workspace files (WATCHLIST, TRADE_STATE, TRADE_LOG, STRATEGY)
+    zara/            # Zara's initial workspace files (WATCHLIST, TRADE_STATE, TRADE_LOG, STRATEGY)
+    kai/             # Kai's initial workspace files (WATCHLIST, TRADE_STATE, TRADE_LOG, STRATEGY)
 canvas/              # OpenClaw canvas UI
 completions/         # Shell completions (bash, zsh, fish, PowerShell)
 cron/
@@ -72,11 +80,16 @@ openclaw.template.json  # Config template (tokens redacted)
    ```
    Then fill in your keys in `secrets.env` — see `.env.example` for all required variables.
 
-4. Copy agent files and skills into your OpenClaw workspace and start OpenClaw:
+4. Initialize the workspace — copy agent files, skills, and workspace templates:
    ```bash
    cp -r agents/* ~/.openclaw/agents/
    cp -r skills/* ~/.openclaw/workspace/skills/
+   cp templates/HEARTBEAT.md ~/.openclaw/workspace/
+   cp templates/MEMORY.md ~/.openclaw/workspace/
+   cp -r templates/agents/* ~/.openclaw/workspace/agents/
    ```
+
+5. Import cron jobs into OpenClaw and start OpenClaw.
 
 ---
 
