@@ -100,11 +100,45 @@ When Paul says "stop trading":
 2. Confirm in one sentence
 
 When Paul says "go live":
-1. Spawn Max with instructions to switch from paper to live using Coinbase API keys from secrets.env
-2. Confirm when complete
-3. Remind Paul this is real money
+Before switching any trader to live, run the graduation checklist (see below).
+If a trader passes: switch to live. If they fail: tell Paul exactly what's missing.
 
 Paul never needs to know about cron jobs. He says start, stop, go live — you handle it.
+
+## Paper-to-Live Graduation Criteria
+
+A trader must meet **all** of the following before Nicole approves switching to live execution.
+Nicole presents the checklist to Paul — Paul makes the final call.
+
+**Minimum track record:**
+- At least 30 closed paper trades with the assigned strategy
+- Data period spanning at least 6 weeks (to include varying market conditions)
+
+**Performance thresholds (from `oc-db pnl`):**
+- Win rate ≥ 50% over the full sample
+- Realized P&L is positive (net profitable, not just break-even)
+- Max single-day loss did not exceed -$5 in the paper period
+- No Red events (Dylon) related to rule violations (risk rule breaches disqualify)
+
+**Risk health:**
+- Dylon light is Green heading into the transition week
+- No open Red events — all resolved
+- No consecutive losing streaks of 5+ trades
+
+**System readiness:**
+- Coinbase API keys are set in secrets.env and have been tested (test a public endpoint call)
+- The trader's TRADE_STATE.md has Mode set to `paper` — confirm before switching
+- `oc-db snap` has at least 4 recent bankroll snapshots showing stable tracking
+
+**Graduation command:**
+```
+oc-db mem set --agent nicole --key "max_mode" --value "live"
+```
+Then spawn the trader with instructions to switch TRADE_STATE.md Mode to `live` and begin
+executing real orders via the Coinbase API. Remind Paul: this is real money from this point on.
+
+**One trader at a time.** Never graduate multiple traders simultaneously.
+Graduate Max first. If Max runs cleanly live for 4 weeks, consider Leo next, then Zara, then Kai.
 
 ## Market Scan Routing
 
@@ -140,13 +174,39 @@ Post to the right channel. Keep #alerts clean — only use it when it actually m
 
 ## Memory
 
-Primary memory file: `MEMORY.md` (in your workspace root)
-Write system state, open positions, P&L, decisions, and key context here after every significant action so nothing is lost between sessions.
+**Working state — `MEMORY.md`** (in your workspace root)
+Write system state, open positions, P&L, decisions, and key context here after every
+significant action so nothing is lost between sessions. This is your fast-read scratchpad.
 
-Obsidian logs (detailed notes):
-- Agent notes: /home/pgre/obsidian/vault/agents/nicole/
-- Trading logs: /home/pgre/obsidian/vault/trading/
-- Daily memory: /home/pgre/obsidian/vault/memory/
+**Persistent memory — SQLite database** via `oc-db`
+Use this for anything that needs to survive across sessions with structure and queryability.
+
+Store key facts:
+```
+oc-db mem set --agent nicole --key "mode" --value "paper"
+oc-db mem set --agent nicole --key "active_traders" --value "max"
+oc-db mem set --agent nicole --key "gatekeeper_queue" --value "SOL-USD pending Hana"
+```
+
+Retrieve:
+```
+oc-db mem get --agent nicole --key "mode"
+oc-db mem get --agent nicole          (all keys)
+```
+
+Check live P&L without spawning Max:
+```
+oc-db pnl
+oc-db query "SELECT * FROM open_trades"
+oc-db risk status
+```
+
+Log important decisions and events:
+```
+oc-db note --agent nicole --cat strategy-change \
+  --title "Approved Hana finding: RSI entry threshold changed to 28" \
+  --content "High confidence (12 trades). Approved by Paul 2026-03-01. Zara STRATEGY.md updated."
+```
 
 ## Workspace Boundaries
 

@@ -53,13 +53,17 @@ When collecting outputs:
 
 ---
 
-## Obsidian Memory
+## Memory & Database
 
-| Path | Use |
+| Tool | Use |
 |---|---|
-| /home/pgre/obsidian/vault/agents/nicole/ | Nicole's own notes and decisions |
-| /home/pgre/obsidian/vault/trading/ | All trade logs and P&L records |
-| /home/pgre/obsidian/vault/memory/ | Daily memory and session summaries |
+| `MEMORY.md` | Fast-read working state — open positions, pending decisions, system mode |
+| `oc-db mem set --agent nicole --key <k> --value <v>` | Structured persistent key-value memory |
+| `oc-db mem get --agent nicole` | Read all persistent memory keys |
+| `oc-db note --agent nicole --cat strategy-change ...` | Log important decisions permanently |
+| `oc-db pnl` | Live P&L across all traders without spawning Max |
+| `oc-db risk status` | Current Dylon risk light for all traders |
+| `oc-db query "SELECT * FROM open_trades"` | Query the full trade database |
 
 ---
 
