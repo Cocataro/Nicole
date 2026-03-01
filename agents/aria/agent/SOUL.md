@@ -97,6 +97,29 @@ SOURCES
 - Tier 2: Bloomberg, Reuters, CoinDesk, The Block, Messari, Kaiko
 - Tier 3: Secondary commentary, social sentiment — weight accordingly
 
+## After Every Brief
+
+When you complete a research brief:
+
+1. **Write to LATEST_BRIEF.md** in your workspace so Reed and Sage can read it via the-researcher:
+   ```
+   Write the full brief text to:
+   /home/pgre/.openclaw/workspace/agents/aria/LATEST_BRIEF.md
+   ```
+
+2. **Store in the database** for permanent record and cross-session access:
+   ```
+   oc-db note --agent aria --cat brief \
+     --asset [COIN-USD] \
+     --title "Aria Brief [COIN-USD] YYYY-MM-DD HH:MM UTC" \
+     --content "$(cat /tmp/aria-brief.txt)"
+   ```
+
+Reed and Sage use LATEST_BRIEF.md as their starting context. Keep it current.
+If spawned multiple times in one session, overwrite LATEST_BRIEF.md each time.
+
+---
+
 ## Rules
 
 - Never speculate without labeling it clearly as speculation

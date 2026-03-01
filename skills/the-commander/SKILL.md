@@ -41,24 +41,33 @@ Never spawn in parallel — the Legion runs one model at a time.
 
 When Paul says "find me trades" or "scan markets":
 
-1. Spawn Aria with: "Research current BTC-USD and ETH-USD market conditions.
+**Step 0: Identify the coins in scope**
+- Max's coins: BTC-USD, ETH-USD (always in scope)
+- Leo's, Zara's, Kai's coins: read their WATCHLIST.md Section A for current active assignments
+- Scan all active coins across all four traders
+
+**Step 1: Spawn Aria once per coin in scope** (in sequence, not parallel):
+For each coin: "Research current [COIN-USD] market conditions.
    Include: trend structure, key price levels, RSI, volume, on-chain signals.
-   Standard research brief format."
+   Standard research brief format. Write to LATEST_BRIEF.md after completing."
 
-2. Spawn Reed with: "Scan for news on BTC and ETH in the last 24 hours.
-   Brief Aria's current read: [paste Aria's directional bias].
-   Flag anything that contradicts or confirms."
+**Step 2: Spawn Reed** with Aria's context:
+"Scan for news on [all active coins, comma-separated] in the last 24 hours.
+   Aria's reads: [paste each coin's directional bias].
+   Flag anything that contradicts or confirms any coin's thesis."
 
-3. Spawn Sage with: "Analyze current market sentiment for BTC and ETH.
-   Aria's read: [bullish/bearish/neutral, key levels].
-   Reed's read: [major stories, any urgency].
-   Check for divergences. Standard sentiment brief."
+**Step 3: Spawn Sage** with Aria and Reed context:
+"Analyze current market sentiment for [all active coins].
+   Aria's reads: [bullish/bearish/neutral per coin].
+   Reed's reads: [major stories, any urgency].
+   Check for divergences. Standard sentiment brief per coin."
 
-4. Synthesize all three into a single ranked opportunity list for Paul:
+**Step 4: Synthesize all outputs** into a single ranked opportunity list for Paul:
    - No jargon
    - Plain English
-   - Lead with the best setup
+   - Lead with the best setup across all four traders
    - Note agent consensus and conviction level
+   - Which trader would take which coin — route by strategy fit
    - Maximum one paragraph per opportunity
 
 ---

@@ -19,15 +19,21 @@ Return a structured summary for use in the calling agent's own brief.
 
 ## Where to Look
 
-Aria's workspace: `/home/pgre/.openclaw/workspace/agents/aria/`
+Check in this order — stop when you find a fresh brief:
 
-Check these files in order:
+1. **`LATEST_BRIEF.md`** in Aria's workspace:
+   `/home/pgre/.openclaw/workspace/agents/aria/LATEST_BRIEF.md`
+   Aria overwrites this file after every spawn. If it exists, it is the current brief.
 
-1. `LATEST_BRIEF.md` — Aria's most recent completed brief (if she writes one)
-2. Most recent session output in her workspace
+2. **Database** (if file is missing or stale):
+   ```
+   oc-db note list --agent aria --cat brief --limit 1
+   oc-db note get --id <ID>
+   ```
+   Check the timestamp before using — DB brief may be from a previous session.
 
-If no fresh brief exists: report "No current Aria brief available" and proceed
-without it. Never invent or estimate what Aria would have said.
+If neither source has a fresh brief: report "No current Aria brief available"
+and proceed without it. Never invent or estimate what Aria would have said.
 
 ---
 
