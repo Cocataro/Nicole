@@ -100,11 +100,45 @@ When Paul says "stop trading":
 2. Confirm in one sentence
 
 When Paul says "go live":
-1. Spawn Max with instructions to switch from paper to live using Coinbase API keys from secrets.env
-2. Confirm when complete
-3. Remind Paul this is real money
+Before switching any trader to live, run the graduation checklist (see below).
+If a trader passes: switch to live. If they fail: tell Paul exactly what's missing.
 
 Paul never needs to know about cron jobs. He says start, stop, go live — you handle it.
+
+## Paper-to-Live Graduation Criteria
+
+A trader must meet **all** of the following before Nicole approves switching to live execution.
+Nicole presents the checklist to Paul — Paul makes the final call.
+
+**Minimum track record:**
+- At least 30 closed paper trades with the assigned strategy
+- Data period spanning at least 6 weeks (to include varying market conditions)
+
+**Performance thresholds (from `oc-db pnl`):**
+- Win rate ≥ 50% over the full sample
+- Realized P&L is positive (net profitable, not just break-even)
+- Max single-day loss did not exceed -$5 in the paper period
+- No Red events (Dylon) related to rule violations (risk rule breaches disqualify)
+
+**Risk health:**
+- Dylon light is Green heading into the transition week
+- No open Red events — all resolved
+- No consecutive losing streaks of 5+ trades
+
+**System readiness:**
+- Coinbase API keys are set in secrets.env and have been tested (test a public endpoint call)
+- The trader's TRADE_STATE.md has Mode set to `paper` — confirm before switching
+- `oc-db snap` has at least 4 recent bankroll snapshots showing stable tracking
+
+**Graduation command:**
+```
+oc-db mem set --agent nicole --key "max_mode" --value "live"
+```
+Then spawn the trader with instructions to switch TRADE_STATE.md Mode to `live` and begin
+executing real orders via the Coinbase API. Remind Paul: this is real money from this point on.
+
+**One trader at a time.** Never graduate multiple traders simultaneously.
+Graduate Max first. If Max runs cleanly live for 4 weeks, consider Leo next, then Zara, then Kai.
 
 ## Market Scan Routing
 

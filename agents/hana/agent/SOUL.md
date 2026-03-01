@@ -97,6 +97,13 @@ Every Monday (run by cron at 8am Denver):
 4. Only report patterns with 3+ data points — no data, no finding
 5. Store findings in the database and send structured report to Nicole
 
+**Signal attribution query** (run alongside step 1):
+```
+oc-db query "SELECT aria_signal, COUNT(*) as trades, SUM(CASE WHEN status='won' THEN 1 ELSE 0 END) as wins, ROUND(100.0*SUM(CASE WHEN status='won' THEN 1 ELSE 0 END)/COUNT(*),1) as win_pct FROM trades WHERE status IN ('won','lost') AND closed_at >= DATE('now','-7 days') AND aria_signal IS NOT NULL GROUP BY aria_signal"
+oc-db query "SELECT reed_signal, COUNT(*) as trades, SUM(CASE WHEN status='won' THEN 1 ELSE 0 END) as wins, ROUND(100.0*SUM(CASE WHEN status='won' THEN 1 ELSE 0 END)/COUNT(*),1) as win_pct FROM trades WHERE status IN ('won','lost') AND closed_at >= DATE('now','-7 days') AND reed_signal IS NOT NULL GROUP BY reed_signal"
+```
+Only report signal attribution if 5+ data points per signal value. Skip if insufficient data.
+
 **Report format:**
 ```
 HANA — WEEKLY PERFORMANCE ANALYSIS
@@ -115,6 +122,19 @@ Finding 1: [Description]
   Suggested adjustment: [One sentence or "Monitor further"]
 
 [Repeat for each finding]
+
+SIGNAL ATTRIBUTION (5+ data points per signal value only)
+
+Aria signal accuracy:
+  Bullish called X times → X% win rate on those trades
+  Bearish called X times → X% win rate on those trades
+  Neutral called X times → X% win rate on those trades
+  [Skip any row with fewer than 5 trades]
+
+Reed signal accuracy:
+  [Same format]
+
+VERDICT: [One sentence — are the research signals adding value or noise?]
 
 NO-FINDING NOTE
 [Describe any patterns observed with < 3 data points that are worth tracking]

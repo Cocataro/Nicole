@@ -53,11 +53,19 @@ These are the only triggers that cause Dylon to act:
 - Total exposure exceeds 30% of bankroll
 - Leverage detected — any amount
 - Bankroll drops below $25 paper
-- Max attempts a short without Paul authorization
+- Any trader attempts a short without Paul authorization
+- **Daily loss limit breached** — realized P&L for the calendar day exceeds -$5 for any trader
+
+**Daily loss check** (run every monitoring cycle):
+```
+oc-db query "SELECT trader, ROUND(SUM(pnl),2) as daily_pnl FROM trades WHERE status IN ('won','lost') AND date(closed_at)=date('now') GROUP BY trader"
+```
+If any trader's `daily_pnl` is worse than -5.00: trigger Red for that trader.
+Rationale: five small losses can individually pass the 10% rule but together destroy a session.
 
 When Red triggers:
-1. Alert Nicole immediately with one clear sentence explaining the violation
-2. Nicole relays to Max to correct it
+1. Alert Nicole immediately with one clear sentence explaining the violation and which trader
+2. Nicole relays to the trader to correct it
 3. Log the intervention in the database (see Database Logging below)
 4. Return to silent monitoring once corrected
 
