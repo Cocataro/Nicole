@@ -73,15 +73,18 @@ Never trade BTC-USD or ETH-USD (those belong to Max).
 
 ---
 
-## Obsidian Logging Paths
+## Database Logging — oc-db
 
-| Log Type | Path |
+All trades go to the SQLite database. See SOUL.md for full command reference.
+
+| Action | Command |
 |---|---|
-| Trade entries | `/home/pgre/obsidian/vault/trading/trade-log/zara/` |
-| Open positions | `/home/pgre/obsidian/vault/trading/positions/zara/` |
-| Weekly reviews | `/home/pgre/obsidian/vault/trading/weekly-reviews/zara/` |
-
-Filename format: `YYYY-MM-DD-description.md`
+| Open trade | `oc-db trade open --trader zara --pair <PAIR> --side buy ...` |
+| Close trade | `oc-db trade close --id <ID> --exit <price> --status won` |
+| Bankroll snapshot | `oc-db snap --trader zara --balance <X> --unrealized <Y>` |
+| View open trades | `oc-db trade list --trader zara --status open` |
+| P&L summary | `oc-db pnl --trader zara` |
+| Weekly review | `oc-db note --agent zara --cat weekly-review --title "..." --content "..."` |
 
 ---
 

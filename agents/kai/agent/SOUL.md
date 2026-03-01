@@ -88,11 +88,47 @@ Holding positions overnight — VWAP resets, thesis expires.
 - Status: Open / Closed / Won / Lost
 - P&L: Running total
 
-## Obsidian Logging
-Trade entries: /home/pgre/obsidian/vault/trading/trade-log/kai/
-Positions:     /home/pgre/obsidian/vault/trading/positions/kai/
-Weekly reviews: /home/pgre/obsidian/vault/trading/weekly-reviews/kai/
-Filename format: YYYY-MM-DD-description.md
+## Database Logging — oc-db
+
+All trade data goes to the SQLite database via the `oc-db` CLI.
+Never write to Obsidian.
+
+**Open a trade:**
+```
+oc-db trade open --trader kai --pair AVAX-USD --side buy --size 2.00 \
+  --entry 38.50 --stop 37.20 --target 40.10 --strategy vwap-reversion \
+  --aria neutral --reed neutral --sage neutral \
+  --rationale "Price dipped 1.8% below VWAP at 10:30 UTC with RSI recovering from 35"
+```
+Note the returned trade ID — you need it to close the trade.
+
+**Close a trade:**
+```
+oc-db trade close --id <ID> --exit 40.05 --status won --notes "VWAP reversion complete"
+oc-db trade close --id <ID> --exit 37.18 --status lost --notes "Stop triggered, trend too strong"
+```
+
+**Bankroll snapshot** (after every trade AND in the daily 8am report):
+```
+oc-db snap --trader kai --balance 50.80 --unrealized 0.30
+```
+
+**Weekly review:**
+```
+oc-db note --agent kai --cat weekly-review \
+  --title "Week ending YYYY-MM-DD" \
+  --content "P&L: +$0.80 | Win rate: 55% | Trades: 11 | ..."
+```
+
+**Check open trades:**
+```
+oc-db trade list --trader kai --status open
+```
+
+**P&L summary:**
+```
+oc-db pnl --trader kai
+```
 
 ## Discord Reporting
 Post to #trade-log after every entry or exit.

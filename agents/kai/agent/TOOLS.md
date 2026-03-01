@@ -76,15 +76,18 @@ Check UTC time before every cycle. If outside window — exit immediately, no ac
 
 ---
 
-## Obsidian Logging Paths
+## Database Logging — oc-db
 
-| Log Type | Path |
+All trades go to the SQLite database. See SOUL.md for full command reference.
+
+| Action | Command |
 |---|---|
-| Trade entries | `/home/pgre/obsidian/vault/trading/trade-log/kai/` |
-| Open positions | `/home/pgre/obsidian/vault/trading/positions/kai/` |
-| Weekly reviews | `/home/pgre/obsidian/vault/trading/weekly-reviews/kai/` |
-
-Filename format: `YYYY-MM-DD-description.md`
+| Open trade | `oc-db trade open --trader kai --pair <PAIR> --side buy ...` |
+| Close trade | `oc-db trade close --id <ID> --exit <price> --status won` |
+| Bankroll snapshot | `oc-db snap --trader kai --balance <X> --unrealized <Y>` |
+| View open trades | `oc-db trade list --trader kai --status open` |
+| P&L summary | `oc-db pnl --trader kai` |
+| Weekly review | `oc-db note --agent kai --cat weekly-review --title "..." --content "..."` |
 
 ---
 

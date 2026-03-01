@@ -147,9 +147,11 @@ been promoted to Active. The market conditions that produced those scores have c
 
 ### Step 7: Save and Report
 
-Save the full Prospector report to:
+Save the full Prospector report to the database:
 ```
-/home/pgre/obsidian/vault/trading/backtests/YYYY-MM-DD-prospector-scan.md
+oc-db note --agent hana --cat prospector \
+  --title "Prospector Scan YYYY-MM-DD" \
+  --content "<full ranked results text>"
 ```
 
 Post a one-paragraph summary to Discord `#market-research`:

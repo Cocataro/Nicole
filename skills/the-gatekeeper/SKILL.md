@@ -15,8 +15,10 @@ Tier 1 coins Nicole can approve without Paul if conditions are met.
 
 Run in this order every Sunday:
 
-1. Read Hana's Prospector report (from `/home/pgre/obsidian/vault/trading/backtests/`)
-2. Read Dylon's weekly risk summary (from `/home/pgre/obsidian/vault/trading/risk-log/`)
+1. Read Hana's Prospector report from the database:
+   `oc-db note list --agent hana --cat prospector --limit 1` → then `oc-db note get --id <ID>`
+2. Read Dylon's weekly risk summary from the database:
+   `oc-db summary list --reporter dylon --limit 1` → then `oc-db summary get --id <ID>`
 3. Read all four trader WATCHLIST.md files — identify Pending section contents
 4. Run the Gatekeeper evaluation (steps below)
 5. Compile the Sunday briefing for Paul
@@ -140,9 +142,9 @@ PENDING YOUR APPROVAL
 
 ## Logging
 
-Log every Gatekeeper decision to:
+Log every Gatekeeper decision to the database:
 ```
-/home/pgre/obsidian/vault/trading/strategy-changes/YYYY-MM-DD-gatekeeper.md
+oc-db note --agent nicole --cat strategy-change \
+  --title "Gatekeeper YYYY-MM-DD" \
+  --content "Reviewed: X coins. Promoted: [list]. Expired: [list]. Held: [list]. Paul input: [notes]."
 ```
-
-Include: what was reviewed, what was promoted, what was expired, what was held, Paul's input.

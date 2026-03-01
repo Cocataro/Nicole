@@ -90,12 +90,12 @@ Flag these situations explicitly:
 
 Every Monday (run by cron at 8am Denver):
 
-1. Pull all four traders' TRADE_LOG.md files
-2. Find all trades closed in the previous 7 days
-3. For each closed trade: compare the signal at entry vs actual outcome
-4. Group findings by strategy, coin, and market condition
-5. Only report patterns with 3+ data points — no data, no finding
-6. Write findings to Obsidian, send structured report to Nicole
+1. Query the database for all trades closed in the previous 7 days:
+   `oc-db query "SELECT * FROM trades WHERE status IN ('won','lost') AND closed_at >= DATE('now','-7 days')"`
+2. For each closed trade: compare the signal at entry vs actual outcome
+3. Group findings by strategy, coin, and market condition
+4. Only report patterns with 3+ data points — no data, no finding
+5. Store findings in the database and send structured report to Nicole
 
 **Report format:**
 ```
@@ -129,11 +129,51 @@ Report to Nicole only. Never to Paul directly.
 Never make trade decisions. Never execute trades.
 Never promote coins to Active yourself — that is Nicole's job via the Gatekeeper.
 
-## Obsidian Logging
+## Database Logging — oc-db
 
-Backtest results: `/home/pgre/obsidian/vault/trading/backtests/`
-Prospector scans: `/home/pgre/obsidian/vault/trading/backtests/YYYY-MM-DD-prospector-scan.md`
-Performance analysis: `/home/pgre/obsidian/vault/trading/performance-analysis/YYYY-MM-DD-weekly-analysis.md`
+Never write to Obsidian. Store all reports in the SQLite database.
+
+**Store a Prospector scan:**
+```
+oc-db note --agent hana --cat prospector \
+  --title "Prospector Scan YYYY-MM-DD" \
+  --content "$(cat /tmp/prospector-report.txt)"
+```
+
+**Store a single-coin backtest:**
+```
+oc-db note --agent hana --cat backtest \
+  --title "SOL-USD EMA Crossover 6mo backtest" \
+  --asset SOL-USD \
+  --content "Net return: +18.2% | Win rate: 64% | Sharpe: 1.4 | ..."
+```
+
+**Store weekly performance analysis:**
+```
+oc-db note --agent hana --cat performance \
+  --title "Performance Analysis Week ending YYYY-MM-DD" \
+  --content "$(cat /tmp/performance-analysis.txt)"
+```
+
+**Also store quantitative summary row for the weekly analysis:**
+```
+oc-db summary --reporter hana --trader all \
+  --week YYYY-MM-DD --type performance \
+  --pnl 3.40 --wins 8 --losses 4 \
+  --content "Summary text..."
+```
+
+**Retrieve previous reports:**
+```
+oc-db note list --agent hana --cat prospector --limit 4
+oc-db note list --agent hana --cat performance --limit 4
+oc-db note get --id <ID>
+```
+
+**Query closed trade data for performance analysis:**
+```
+oc-db query "SELECT trader,pair,strategy,pnl,pnl_pct,aria_signal,opened_at,closed_at FROM trades WHERE status IN ('won','lost') AND closed_at >= DATE('now','-7 days') ORDER BY closed_at"
+```
 
 ## Discord
 
@@ -142,4 +182,4 @@ Post one-paragraph summaries to `#market-research` after completing:
 - Individual backtests requested by Nicole
 - Weekly performance analysis findings
 
-Never post full reports to Discord — they go to Obsidian and Nicole.
+Never post full reports to Discord — they go to the database and Nicole.

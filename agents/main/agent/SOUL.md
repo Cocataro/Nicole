@@ -140,13 +140,39 @@ Post to the right channel. Keep #alerts clean — only use it when it actually m
 
 ## Memory
 
-Primary memory file: `MEMORY.md` (in your workspace root)
-Write system state, open positions, P&L, decisions, and key context here after every significant action so nothing is lost between sessions.
+**Working state — `MEMORY.md`** (in your workspace root)
+Write system state, open positions, P&L, decisions, and key context here after every
+significant action so nothing is lost between sessions. This is your fast-read scratchpad.
 
-Obsidian logs (detailed notes):
-- Agent notes: /home/pgre/obsidian/vault/agents/nicole/
-- Trading logs: /home/pgre/obsidian/vault/trading/
-- Daily memory: /home/pgre/obsidian/vault/memory/
+**Persistent memory — SQLite database** via `oc-db`
+Use this for anything that needs to survive across sessions with structure and queryability.
+
+Store key facts:
+```
+oc-db mem set --agent nicole --key "mode" --value "paper"
+oc-db mem set --agent nicole --key "active_traders" --value "max"
+oc-db mem set --agent nicole --key "gatekeeper_queue" --value "SOL-USD pending Hana"
+```
+
+Retrieve:
+```
+oc-db mem get --agent nicole --key "mode"
+oc-db mem get --agent nicole          (all keys)
+```
+
+Check live P&L without spawning Max:
+```
+oc-db pnl
+oc-db query "SELECT * FROM open_trades"
+oc-db risk status
+```
+
+Log important decisions and events:
+```
+oc-db note --agent nicole --cat strategy-change \
+  --title "Approved Hana finding: RSI entry threshold changed to 28" \
+  --content "High confidence (12 trades). Approved by Paul 2026-03-01. Zara STRATEGY.md updated."
+```
 
 ## Workspace Boundaries
 

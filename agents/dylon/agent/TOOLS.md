@@ -49,15 +49,22 @@ A Red on one trader never affects the others.
 
 ---
 
-## Obsidian Logging Paths
+## Database Logging — oc-db
 
-| Log Type | Path |
+All risk events and summaries go to the SQLite database.
+See SOUL.md for full command reference.
+
+| Action | Command |
 |---|---|
-| Intervention reports | `/home/pgre/obsidian/vault/trading/risk-log/YYYY-MM-DD-risk-report.md` |
-| Weekly risk summaries | `/home/pgre/obsidian/vault/trading/risk-log/YYYY-MM-DD-weekly-risk-summary.md` |
+| Open risk event | `oc-db risk open --trader <name> --light red --violation "..."` |
+| Resolve risk event | `oc-db risk close --id <ID> --notes "..."` |
+| Current risk status | `oc-db risk status` |
+| List open events | `oc-db risk list --open` |
+| Store weekly summary | `oc-db summary --reporter dylon --trader all --week YYYY-MM-DD --type risk ...` |
 
-Write intervention reports immediately when a Red triggers.
-Write weekly summaries every Sunday regardless of light status.
+Log interventions immediately when Red triggers.
+The oc-db tool automatically updates `agents/dylon/RISK_STATE.md` on every risk open/close.
+Write weekly summary every Sunday regardless of light status.
 
 ---
 

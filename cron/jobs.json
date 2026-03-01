@@ -17,7 +17,7 @@
       "wakeMode": "next-heartbeat",
       "payload": {
         "kind": "agentTurn",
-        "message": "Read HEARTBEAT.md if it exists (workspace context). Follow it strictly. Do not infer or repeat old tasks from prior chats. If nothing needs attention, reply exactly HEARTBEAT_OK. Keep reply short when action is needed.",
+        "message": "Read HEARTBEAT.md if it exists (workspace context). Follow it strictly. Do not infer or repeat old tasks from prior chats. If nothing needs attention, reply exactly HEARTBEAT_OK and then run: oc-db heartbeat ok. If action is needed, describe it briefly and run: oc-db heartbeat action --summary \"<one-sentence summary>\". Keep reply short when action is needed.",
         "model": "google/gemini-3-flash-preview"
       },
       "delivery": {
@@ -50,7 +50,7 @@
       "sessionTarget": "isolated",
       "payload": {
         "kind": "agentTurn",
-        "message": "You are Max, The Sniper trading specialist. Paper trade all coins in Section A of your WATCHLIST.md. Read your WATCHLIST.md to confirm which coins are currently authorized. Execute best available entry based on risk gate (max 10% per trade, max 30% total exposure). Close losers at stop, winners at target or reversal signal. Check Dylon risk gate before any entry. Keep it disciplined.",
+        "message": "You are Max, The Sniper trading specialist. Paper trade all coins in Section A of your WATCHLIST.md. Read your WATCHLIST.md to confirm which coins are currently authorized. Execute best available entry based on risk gate (max 10% per trade, max 30% total exposure). Close losers at stop, winners at target or reversal signal. Check Dylon risk gate before any entry. When you open a trade, log it: oc-db trade open --trader max --pair <PAIR> --side <buy|sell> --size <USD> --entry <price> --stop <price> --target <price> --strategy the-sniper --rationale \"<reason>\" (save the returned ID). When you close a trade: oc-db trade close --id <ID> --exit <price> --status <won|lost>. After any trade, update bankroll: oc-db snap --trader max --balance <current_balance> --unrealized <unrealized_pnl>. Keep it disciplined.",
         "model": "ollama/qwen2.5:14b"
       },
       "delivery": {
@@ -73,7 +73,7 @@
       "sessionTarget": "isolated",
       "payload": {
         "kind": "agentTurn",
-        "message": "You are Leo, EMA Crossover trading specialist. Run your trading cycle. Read STRATEGY.md and WATCHLIST.md. Check all Section A coins for valid EMA crossover setups. Check all open positions and apply exit rules. Request Aria and Reed briefs for any potential entries. Check Dylon risk gate before any entry. Execute any valid entries or exits. Update TRADE_LOG.md and TRADE_STATE.md. If bankroll drops below $25 stop and report to Nicole.",
+        "message": "You are Leo, EMA Crossover trading specialist. Run your trading cycle. Read STRATEGY.md and WATCHLIST.md. Check all Section A coins for valid EMA crossover setups. Check all open positions and apply exit rules. Request Aria and Reed briefs for any potential entries. Check Dylon risk gate before any entry. When you open a trade, log it: oc-db trade open --trader leo --pair <PAIR> --side buy --size <USD> --entry <price> --stop <price> --target <price> --strategy ema-crossover --rationale \"<reason>\" (save the returned ID). When you close: oc-db trade close --id <ID> --exit <price> --status <won|lost>. After any trade: oc-db snap --trader leo --balance <balance>. Update TRADE_LOG.md and TRADE_STATE.md. If bankroll drops below $25 stop and report to Nicole.",
         "model": "ollama/qwen2.5:14b"
       },
       "delivery": {
@@ -96,7 +96,7 @@
       "sessionTarget": "isolated",
       "payload": {
         "kind": "agentTurn",
-        "message": "You are Zara, RSI Reversal trading specialist. Run your trading cycle. Read STRATEGY.md and WATCHLIST.md. Check all Section A coins for valid RSI reversal setups on the 4-hour chart. Confirm price is above 200 EMA before any entry. Check all open positions and apply exit rules. Request Aria and Reed briefs for any potential entries. Check Dylon risk gate before any entry. Execute any valid entries or exits. Update TRADE_LOG.md and TRADE_STATE.md. If bankroll drops below $25 stop and report to Nicole.",
+        "message": "You are Zara, RSI Reversal trading specialist. Run your trading cycle. Read STRATEGY.md and WATCHLIST.md. Check all Section A coins for valid RSI reversal setups on the 4-hour chart. Confirm price is above 200 EMA before any entry. Check all open positions and apply exit rules. Request Aria and Reed briefs for any potential entries. Check Dylon risk gate before any entry. When you open a trade, log it: oc-db trade open --trader zara --pair <PAIR> --side buy --size <USD> --entry <price> --stop <price> --target <price> --strategy rsi-reversal --rationale \"<reason>\" (save the returned ID). When you close: oc-db trade close --id <ID> --exit <price> --status <won|lost>. After any trade: oc-db snap --trader zara --balance <balance>. Update TRADE_LOG.md and TRADE_STATE.md. If bankroll drops below $25 stop and report to Nicole.",
         "model": "ollama/qwen2.5:14b"
       },
       "delivery": {
@@ -119,7 +119,7 @@
       "sessionTarget": "isolated",
       "payload": {
         "kind": "agentTurn",
-        "message": "You are Kai, VWAP Reversion trading specialist. Run your trading cycle. Read STRATEGY.md and WATCHLIST.md. First check current UTC time — if outside 08:00-20:00 UTC, exit immediately with no action. Check all Section A coins for valid VWAP reversion setups on the 1-hour chart. Check all open positions and apply exit rules including the time stop. Request Aria and Reed briefs for any potential entries. Check Dylon risk gate before any entry. Execute any valid entries or exits. Update TRADE_LOG.md and TRADE_STATE.md. If bankroll drops below $25 stop and report to Nicole.",
+        "message": "You are Kai, VWAP Reversion trading specialist. Run your trading cycle. Read STRATEGY.md and WATCHLIST.md. First check current UTC time — if outside 08:00-20:00 UTC, exit immediately with no action. Check all Section A coins for valid VWAP reversion setups on the 1-hour chart. Check all open positions and apply exit rules including the time stop. Request Aria and Reed briefs for any potential entries. Check Dylon risk gate before any entry. When you open a trade, log it: oc-db trade open --trader kai --pair <PAIR> --side buy --size <USD> --entry <price> --stop <price> --target <price> --strategy vwap-reversion --rationale \"<reason>\" (save the returned ID). When you close: oc-db trade close --id <ID> --exit <price> --status <won|lost>. After any trade: oc-db snap --trader kai --balance <balance>. Update TRADE_LOG.md and TRADE_STATE.md. If bankroll drops below $25 stop and report to Nicole.",
         "model": "ollama/qwen2.5:14b"
       },
       "delivery": {
@@ -145,7 +145,7 @@
       "wakeMode": "next-heartbeat",
       "payload": {
         "kind": "agentTurn",
-        "message": "You are Hana, backtesting and strategy validation specialist. Run the weekly Prospector coin universe scan. Read the full skill at /home/pgre/.openclaw/workspace/skills/the-prospector/SKILL.md and follow every step. Pull all active Coinbase USD spot markets, filter by liquidity, pull 6 months of real 1-hour candles per coin from the Coinbase API, backtest all four strategies (The Sniper, EMA Crossover, RSI Reversal, VWAP Reversion) against each coin, score each coin on its best-performing strategy, route Tier 1 and Tier 2 coins to the correct trader's WATCHLIST.md pending section, save the full report to /home/pgre/obsidian/vault/trading/backtests/, post a one-paragraph summary to Discord #market-research, and deliver full ranked results to Nicole. Never simulate or fabricate candle data — real API data only.",
+        "message": "You are Hana, backtesting and strategy validation specialist. Run the weekly Prospector coin universe scan. Read the full skill at ~/.openclaw/workspace/skills/the-prospector/SKILL.md and follow every step. Pull all active Coinbase USD spot markets, filter by liquidity, pull 6 months of real 1-hour candles per coin from the Coinbase API, backtest all four strategies (The Sniper, EMA Crossover, RSI Reversal, VWAP Reversion) against each coin, score each coin on its best-performing strategy, route Tier 1 and Tier 2 coins to the correct trader's WATCHLIST.md pending section. Then store the full report: oc-db note --agent hana --cat prospector --title \"Prospector Scan $(date +%Y-%m-%d)\" --content \"<full ranked results text>\". Post a one-paragraph summary to Discord #market-research and deliver full ranked results to Nicole. Never simulate or fabricate candle data — real API data only.",
         "model": "anthropic/claude-haiku-4-5"
       },
       "delivery": {
@@ -177,7 +177,7 @@
       "wakeMode": "next-heartbeat",
       "payload": {
         "kind": "agentTurn",
-        "message": "You are Dylon, risk management agent. Run the weekly risk summary. Use the-accountant to get current bankroll, exposure, and all open positions. Compile the full Weekly Risk Summary as defined in your SOUL.md — covering bankroll trajectory, peak drawdown, exposure levels, any Red or Yellow events this week, interventions made, and current risk status heading into next week. Save the report to /home/pgre/obsidian/vault/trading/risk-log/YYYY-MM-DD-weekly-risk-summary.md and send the full report to Nicole. This runs every Sunday regardless of light status — always send, never skip.",
+        "message": "You are Dylon, risk management agent. Run the weekly risk summary. Use the-accountant to get current bankroll, exposure, and all open positions. Also query the database: oc-db query \"SELECT * FROM risk_events WHERE created_at >= DATE('now','-7 days') ORDER BY created_at\" to get this week's risk events. Query oc-db query \"SELECT * FROM trader_pnl\" for P&L summary. Compile the full Weekly Risk Summary as defined in your SOUL.md. Then store it: oc-db summary --reporter dylon --trader all --week $(date +%Y-%m-%d) --type risk --start-bankroll <X> --end-bankroll <X> --pnl <X> --wins <N> --losses <N> --max-dd <X> --content \"<full report text>\". Send the full report to Nicole. This runs every Sunday regardless of light status — always send, never skip.",
         "model": "google/gemini-3-flash-preview"
       },
       "delivery": {
@@ -213,7 +213,7 @@
       "wakeMode": "next-heartbeat",
       "payload": {
         "kind": "agentTurn",
-        "message": "You are Nicole. Run the Sunday morning briefing workflow as defined in your HEARTBEAT.md. Step 1: find today's Prospector scan in /home/pgre/obsidian/vault/trading/backtests/. Step 2: find today's risk summary in /home/pgre/obsidian/vault/trading/risk-log/. Step 3: run the-gatekeeper skill at /home/pgre/.openclaw/workspace/skills/the-gatekeeper/SKILL.md — evaluate all pending coins across all four trader WATCHLIST.md files (Max, Leo, Zara, Kai), identify promotions, expire stale entries. Step 4: compile a short Sunday briefing for Paul covering risk status, coin scan results, and any promotion recommendations. Step 5: post the briefing to Discord #nicole. Wait for Paul's response before executing any watchlist changes.",
+        "message": "You are Nicole. Run the Sunday morning briefing workflow. Step 1: get today's Prospector scan from the database: oc-db note list --agent hana --cat prospector --limit 1 (then oc-db note get --id <ID> for the full content). Step 2: get today's risk summary: oc-db summary list --reporter dylon --limit 1 (then oc-db summary get --id <ID>). Step 3: check current risk status: oc-db risk status. Step 4: run the-gatekeeper skill at ~/.openclaw/workspace/skills/the-gatekeeper/SKILL.md — evaluate all pending coins across all four trader WATCHLIST.md files (Max, Leo, Zara, Kai), identify promotions, expire stale entries. Step 5: compile a short Sunday briefing for Paul covering risk status, coin scan results, and any promotion recommendations. Step 6: post the briefing to Discord #nicole. Wait for Paul's response before executing any watchlist changes.",
         "model": "google/gemini-3-flash-preview"
       },
       "delivery": {
@@ -237,7 +237,7 @@
       "jobId": "hana-weekly-performance-review",
       "id": "hana-weekly-performance-review",
       "name": "Hana — Weekly Performance Analysis",
-      "description": "Monday 8am MT — Hana analyses all four traders' trade logs, identifies patterns, sends findings to Nicole before calibrations begin",
+      "description": "Monday 8am MT — Hana analyses all four traders' closed trades from the database, identifies patterns, sends findings to Nicole before calibrations begin",
       "enabled": true,
       "schedule": {
         "kind": "cron",
@@ -249,7 +249,7 @@
       "wakeMode": "next-heartbeat",
       "payload": {
         "kind": "agentTurn",
-        "message": "You are Hana, backtesting and strategy validation specialist. Run the weekly performance analysis as defined in your SOUL.md. Pull all four traders' TRADE_LOG.md files (Max, Leo, Zara, Kai) and closed trade records from /home/pgre/obsidian/vault/trading/trade-log/. For each closed trade this week, compare the Strategy prediction logged at entry vs What actually happened logged at exit. Group findings by strategy, coin, and market condition. Identify patterns with 3 or more data points only — no data, no finding. Write the full analysis to /home/pgre/obsidian/vault/trading/performance-analysis/YYYY-MM-DD-weekly-analysis.md. Send structured findings with suggested rule changes to Nicole. Confidence levels: Low (3–5 trades), Medium (6–10), High (10+). Never invent insights.",
+        "message": "You are Hana, backtesting and strategy validation specialist. Run the weekly performance analysis as defined in your SOUL.md. Pull all closed trades from the last 7 days from the database: oc-db query \"SELECT trader,pair,strategy,side,entry_price,exit_price,pnl,pnl_pct,aria_signal,reed_signal,sage_signal,rationale,opened_at,closed_at FROM trades WHERE status IN ('won','lost') AND closed_at >= DATE('now','-7 days') ORDER BY closed_at\". For each closed trade compare the signal at entry vs actual outcome. Group findings by strategy, coin, and market condition. Identify patterns with 3 or more data points only — no data, no finding. Compile the full weekly performance analysis report. Store it: oc-db note --agent hana --cat performance --title \"Performance Analysis $(date +%Y-%m-%d)\" --content \"<full analysis text>\". Also store summary numbers: oc-db summary --reporter hana --trader all --week $(date +%Y-%m-%d) --type performance --pnl <total_pnl> --wins <N> --losses <N> --content \"<summary>\". Send structured findings with suggested rule changes to Nicole. Confidence levels: Low (3–5 trades), Medium (6–10), High (10+). Never invent insights.",
         "model": "anthropic/claude-haiku-4-5"
       },
       "delivery": {
@@ -268,7 +268,7 @@
       "jobId": "max-weekly-calibration",
       "id": "max-weekly-calibration",
       "name": "Max — Weekly Calibration Review",
-      "description": "Monday 9am MT — Max runs weekly review and updates WEEKLY_REVIEW.md and WEEKLY_CALIBRATION.md",
+      "description": "Monday 9am MT — Max runs weekly review and stores it in the database",
       "enabled": true,
       "schedule": {
         "kind": "cron",
@@ -280,7 +280,7 @@
       "wakeMode": "next-heartbeat",
       "payload": {
         "kind": "agentTurn",
-        "message": "You are Max, The Sniper trading specialist. Run your weekly review. Update WEEKLY_REVIEW.md with this week's P&L, win rate, number of trades, signal quality across all active pairs, and what worked or didn't. Update WEEKLY_CALIBRATION.md with agent input quality and any process notes. Save to /home/pgre/obsidian/vault/trading/weekly-reviews/max/YYYY-MM-DD-weekly-review.md. Report summary to Nicole.",
+        "message": "You are Max, The Sniper trading specialist. Run your weekly review. Query your closed trades: oc-db query \"SELECT * FROM trades WHERE trader='max' AND closed_at >= DATE('now','-7 days')\". Query your P&L summary: oc-db pnl --trader max. Compile the weekly review covering: P&L this week, win rate, number of trades, signal quality from Aria/Reed/Sage, what worked, what didn't, any process notes. Store the review: oc-db note --agent max --cat weekly-review --title \"Max Weekly Review $(date +%Y-%m-%d)\" --content \"<full review text>\". Take a bankroll snapshot: oc-db snap --trader max --balance <current_balance>. Report summary to Nicole.",
         "model": "anthropic/claude-haiku-4-5"
       },
       "delivery": {
@@ -299,7 +299,7 @@
       "jobId": "nicole-strategy-update",
       "id": "nicole-strategy-update",
       "name": "Nicole — Weekly Strategy Update",
-      "description": "Monday noon MT — Nicole reviews Hana's performance findings and trader calibrations, implements approved rule changes to strategy files",
+      "description": "Monday noon MT — Nicole reviews Hana's performance findings and implements approved rule changes",
       "enabled": true,
       "schedule": {
         "kind": "cron",
@@ -311,7 +311,7 @@
       "wakeMode": "next-heartbeat",
       "payload": {
         "kind": "agentTurn",
-        "message": "You are Nicole. Run the weekly strategy update as defined in your SOUL.md Strategy Update Protocol. Read today's performance analysis from /home/pgre/obsidian/vault/trading/performance-analysis/. Review all trader WEEKLY_CALIBRATION.md files. For each of Hana's findings: Low confidence (3–5 trades) — note and watch, no change. Medium confidence (6–10 trades) — draft the change and message Paul for approval before implementing. High confidence (10+ trades) — implement directly by editing the relevant STRATEGY.md, then notify Paul. Log all changes (or decisions not to change) to /home/pgre/obsidian/vault/trading/strategy-changes/YYYY-MM-DD-changes.md. Post a brief summary to Discord #market-research. Data drives changes — nothing else.",
+        "message": "You are Nicole. Run the weekly strategy update as defined in your SOUL.md Strategy Update Protocol. Retrieve today's performance analysis: oc-db note list --agent hana --cat performance --limit 1 (then oc-db note get --id <ID>). For each of Hana's findings: Low confidence (3–5 trades) — note and watch, no change. Medium confidence (6–10 trades) — draft the change and message Paul for approval before implementing. High confidence (10+ trades) — implement directly by editing the relevant STRATEGY.md, then notify Paul. After implementing or deciding on each finding, log the decision: oc-db note --agent nicole --cat strategy-change --title \"Strategy update $(date +%Y-%m-%d)\" --content \"<what changed and why>\". Post a brief summary to Discord #market-research. Data drives changes — nothing else.",
         "model": "anthropic/claude-haiku-4-5"
       },
       "delivery": {

@@ -193,6 +193,30 @@ body {
 .cron-error { font-size: 10px; color: var(--red); margin-top: 2px; }
 .cron-model { font-size: 9px; color: var(--muted); opacity: .7; }
 
+/* ── Sparkline ── */
+.tc-sparkline { margin-bottom: 9px; }
+.tc-spark-lbl { font-size: 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 3px; }
+.spark-svg { width: 100%; height: 28px; display: block; }
+.spark-area { fill: rgba(99,102,241,.10); }
+.spark-line { fill: none; stroke: var(--blue); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.spark-line.pos { stroke: var(--green); }
+.spark-line.neg { stroke: var(--red); }
+.spark-area.pos { fill: rgba(34,197,94,.10); }
+.spark-area.neg { fill: rgba(239,68,68,.10); }
+
+/* ── Risk panel ── */
+.risk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.risk-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 11px 13px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.risk-card.green  { border-color: rgba(34,197,94,.2); }
+.risk-card.yellow { border-color: rgba(245,158,11,.4); }
+.risk-card.red    { border-color: rgba(239,68,68,.5); }
+.risk-name { font-size: 13px; font-weight: 700; }
+.risk-strat { font-size: 9px; color: var(--muted); margin-top: 1px; }
+
 /* ── Colors ── */
 .pos { color: var(--green); }
 .neg { color: var(--red); }
@@ -271,6 +295,11 @@ body {
 
   <div class="sec-lbl">Traders</div>
   <div class="traders" id="traders">
+    <div class="empty" style="grid-column:1/-1"><div class="spinner"></div><br>Loading…</div>
+  </div>
+
+  <div class="sec-lbl">Risk — Dylon</div>
+  <div class="risk-grid" id="risk-grid">
     <div class="empty" style="grid-column:1/-1"><div class="spinner"></div><br>Loading…</div>
   </div>
 
@@ -397,8 +426,52 @@ async function closeAll(id) {
   } catch { toast('Request failed'); }
 }
 
+// ── Sparkline ─────────────────────────────────────────────────
+function buildSparkline(points, startBalance) {
+  // points: array of {day, avg_balance} sorted ascending
+  if (!points || points.length < 2) return '';
+  const vals = points.map(p => parseFloat(p.avg_balance));
+  const min  = Math.min(...vals);
+  const max  = Math.max(...vals);
+  const range = max - min || 1;
+  const W = 100, H = 28, pad = 2;
+
+  const xs = points.map((_, i) => pad + (i / (points.length - 1)) * (W - 2 * pad));
+  const ys = vals.map(v => pad + (1 - (v - min) / range) * (H - 2 * pad));
+
+  const last = vals[vals.length - 1];
+  const trend = last >= (startBalance || vals[0]) ? 'pos' : 'neg';
+
+  const pts  = xs.map((x, i) => `${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
+  const poly = pts + ` ${xs[xs.length-1].toFixed(1)},${H} ${xs[0].toFixed(1)},${H}`;
+
+  return `<svg class="spark-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <polygon class="spark-area ${trend}" points="${poly}"/>
+    <polyline class="spark-line ${trend}" points="${pts}"/>
+  </svg>`;
+}
+
+// ── Render: Risk Panel ────────────────────────────────────────
+function renderRisk(riskData) {
+  const el = document.getElementById('risk-grid');
+  const traderInfo = { max: 'The Sniper', leo: 'EMA Crossover', zara: 'RSI Reversal', kai: 'VWAP Reversion' };
+  const traders = ['max', 'leo', 'zara', 'kai'];
+
+  el.innerHTML = traders.map(id => {
+    const light = (riskData?.[id] || 'Green').toLowerCase();
+    const label = light.charAt(0).toUpperCase() + light.slice(1);
+    return `<div class="risk-card ${light}">
+  <div>
+    <div class="risk-name">${id.charAt(0).toUpperCase() + id.slice(1)}</div>
+    <div class="risk-strat">${traderInfo[id]}</div>
+  </div>
+  <div class="badge ${light}">${label}</div>
+</div>`;
+  }).join('');
+}
+
 // ── Render: Traders ───────────────────────────────────────────
-function renderTraders(traders) {
+function renderTraders(traders, history) {
   const el = document.getElementById('traders');
   if (!traders.length) { el.innerHTML = '<div class="empty" style="grid-column:1/-1">No data</div>'; return; }
 
@@ -408,10 +481,22 @@ function renderTraders(traders) {
     const realPnl   = fmtPnl(t.realized_pnl);
     const paused    = t.paused;
     const hasPos    = t.position_count > 0;
-    const wr        = t.win_rate !== null ? t.win_rate + '%' : '—';
+    // prefer DB win rate / trade count if available
+    const wr        = (t.db_win_rate !== undefined ? t.db_win_rate : t.win_rate) !== null
+                        ? (t.db_win_rate ?? t.win_rate) + '%' : '—';
+    const trades    = t.db_total_trades ?? t.total_trades;
     const modeCls   = t.mode?.toLowerCase() === 'live' ? 'live' : 'paper';
     const modeLabel = t.mode?.toUpperCase() || 'PAPER';
     const cardCls   = ['tcard', paused ? 'paused' : '', hasPos ? 'has-positions' : ''].filter(Boolean).join(' ');
+
+    // Sparkline for this trader
+    const sparkPoints = (history || []).filter(h => h.trader === t.id);
+    const sparkHtml   = sparkPoints.length >= 2
+      ? `<div class="tc-sparkline">
+          <div class="tc-spark-lbl">7d Bankroll</div>
+          ${buildSparkline(sparkPoints, 50)}
+        </div>`
+      : '';
 
     // Build positions HTML
     let posHtml = '';
@@ -470,9 +555,10 @@ function renderTraders(traders) {
     </div>
     <div class="tc-row">
       <span class="tc-lbl">Trades</span>
-      <span class="tc-val">${t.total_trades || '—'}</span>
+      <span class="tc-val">${trades || '—'}</span>
     </div>
   </div>
+  ${sparkHtml}
   ${posHtml}
   <div class="tc-btns">
     <button class="btn ${paused ? 'btn-resume' : 'btn-pause'}" onclick="togglePause('${t.id}', ${paused})">
@@ -525,22 +611,28 @@ function renderCrons(jobs) {
 
 // ── Render: Trades ────────────────────────────────────────────
 function renderTrades(trades) {
-  const el   = document.getElementById('trades');
-  const real = trades.filter(t => t['Timestamp (UTC)'] || t['Date Opened']);
-  if (!real.length) { el.innerHTML = '<div class="empty">No trades yet</div>'; return; }
+  const el = document.getElementById('trades');
+  if (!trades.length) { el.innerHTML = '<div class="empty">No trades yet</div>'; return; }
 
-  el.innerHTML = real.slice(0, 30).map(t => {
-    const coin   = t['Coin'] || t['Market'] || 'Unknown';
-    const status = (t['Status'] || (t._hasExit ? 'Closed' : 'Open')).toUpperCase();
-    const pnl    = t['P&L'];
-    const ts     = t['Timestamp (UTC)'] || t['Date Opened'] || '';
-    const dir    = t['Direction'] || t['Position'] || '';
-    const trader = t.trader || '';
-    const entry  = t['Entry Price'] || '';
-    const target = t['Target Price'] || '';
+  el.innerHTML = trades.slice(0, 30).map(t => {
+    // Support both SQLite format and legacy TRADE_LOG.md format
+    const isSqlite = t.pair !== undefined;
+
+    const coin   = isSqlite ? t.pair : (t['Coin'] || t['Market'] || 'Unknown');
+    const rawSt  = isSqlite ? t.status : (t['Status'] || (t._hasExit ? 'Closed' : 'Open'));
+    const status = (rawSt || 'open').toUpperCase();
+    const pnl    = isSqlite ? t.pnl : t['P&L'];
+    const pnlPct = isSqlite ? t.pnl_pct : null;
+    const ts     = isSqlite ? (t.opened_at || '') : (t['Timestamp (UTC)'] || t['Date Opened'] || '');
+    const dir    = isSqlite ? t.side : (t['Direction'] || t['Position'] || '');
+    const trader = isSqlite ? t.trader : (t.trader || '');
+    const entry  = isSqlite ? t.entry_price : t['Entry Price'];
+    const strat  = isSqlite ? t.strategy : null;
 
     const sc     = status === 'WON' ? 'won' : status === 'LOST' ? 'lost' : 'open';
-    const pnlFmt = pnl ? fmtPnl(pnl) : null;
+    const pnlFmt = pnl !== null && pnl !== undefined ? fmtPnl(pnl) : null;
+    const pctStr = pnlPct !== null && pnlPct !== undefined
+      ? ` (${pnlPct >= 0 ? '+' : ''}${parseFloat(pnlPct).toFixed(1)}%)` : '';
 
     return `<div class="titem">
   <div class="ti-head">
@@ -548,13 +640,13 @@ function renderTrades(trades) {
     <div class="ti-outcome ${sc}">${status}</div>
   </div>
   <div class="ti-meta">
-    ${trader ? `<span>${trader}</span>` : ''}
-    ${dir    ? `<span>${dir}</span>`    : ''}
-    ${entry  ? `<span>@ ${entry}</span>` : ''}
-    ${target && sc === 'open' ? `<span>→ ${target}</span>` : ''}
+    ${trader ? `<span>${trader.charAt(0).toUpperCase()+trader.slice(1)}</span>` : ''}
+    ${dir    ? `<span>${dir.toUpperCase()}</span>` : ''}
+    ${entry  ? `<span>@ ${typeof entry === 'number' ? entry.toLocaleString() : entry}</span>` : ''}
+    ${strat  ? `<span>${strat}</span>` : ''}
     ${ts     ? `<span>${ts.slice(0, 10)}</span>` : ''}
   </div>
-  ${pnlFmt ? `<div class="ti-pnl ${pnlFmt.cls}">${pnlFmt.text}</div>` : ''}
+  ${pnlFmt ? `<div class="ti-pnl ${pnlFmt.cls}">${pnlFmt.text}${pctStr}</div>` : ''}
 </div>`;
   }).join('');
 }
@@ -562,10 +654,12 @@ function renderTrades(trades) {
 // ── Refresh ───────────────────────────────────────────────────
 async function loadAll() {
   try {
-    const [status, trades, crons] = await Promise.all([
+    const [status, trades, crons, history, risk] = await Promise.all([
       api('/api/status'),
       api('/api/trades'),
       api('/api/crons'),
+      api('/api/history?days=7').catch(() => []),
+      api('/api/risk').catch(() => null),
     ]);
 
     // Summary strip
@@ -579,22 +673,27 @@ async function loadAll() {
 
     document.getElementById('s-pos').textContent = s.total_positions;
 
-    // Win rate: average of traders that have data
-    const wrs = status.traders.filter(t => t.win_rate !== null).map(t => t.win_rate);
-    document.getElementById('s-wr').textContent = wrs.length ? (wrs.reduce((a,b) => a+b, 0) / wrs.length).toFixed(0) + '%' : '—';
+    // Win rate: prefer DB data, fall back to TRADE_STATE.md
+    const wrs = status.traders
+      .map(t => t.db_win_rate ?? t.win_rate)
+      .filter(v => v !== null && v !== undefined);
+    document.getElementById('s-wr').textContent =
+      wrs.length ? (wrs.reduce((a,b) => a+b, 0) / wrs.length).toFixed(0) + '%' : '—';
 
     // Dylon badge
     const badge = document.getElementById('dylon-badge');
-    badge.className = `badge ${s.dylon_status.toLowerCase()}`;
-    badge.textContent = s.dylon_status;
+    const dyLight = s.dylon_status || 'Green';
+    badge.className = `badge ${dyLight.toLowerCase()}`;
+    badge.textContent = dyLight;
 
     // Timestamp
     document.getElementById('last-updated').textContent =
       new Date(status.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    renderTraders(status.traders);
+    renderTraders(status.traders, history);
+    renderRisk(risk?.traders || s.dylon_details || {});
     renderCrons(Array.isArray(crons) ? crons : []);
-    renderTrades(trades);
+    renderTrades(Array.isArray(trades) ? trades : []);
 
     // Reset progress bar
     const bar = document.getElementById('prog-fill');

@@ -80,11 +80,47 @@ Any setup that doesn't match the EMA Crossover skill exactly.
 - Status: Open / Closed / Won / Lost
 - P&L: Running total
 
-## Obsidian Logging
-Trade entries: /home/pgre/obsidian/vault/trading/trade-log/leo/
-Positions:     /home/pgre/obsidian/vault/trading/positions/leo/
-Weekly reviews: /home/pgre/obsidian/vault/trading/weekly-reviews/leo/
-Filename format: YYYY-MM-DD-description.md
+## Database Logging — oc-db
+
+All trade data goes to the SQLite database via the `oc-db` CLI.
+Never write to Obsidian.
+
+**Open a trade:**
+```
+oc-db trade open --trader leo --pair SOL-USD --side buy --size 3.00 \
+  --entry 180.00 --stop 172.00 --target 194.00 --strategy ema-crossover \
+  --aria bullish --reed neutral --sage bullish \
+  --rationale "9 EMA crossed above 21 EMA on 1h with 50 EMA slope positive"
+```
+Note the returned trade ID — you need it to close the trade.
+
+**Close a trade:**
+```
+oc-db trade close --id <ID> --exit 193.50 --status won --notes "Hit target"
+oc-db trade close --id <ID> --exit 171.80 --status lost --notes "Stopped out"
+```
+
+**Bankroll snapshot** (after every trade AND in the daily 8am report):
+```
+oc-db snap --trader leo --balance 51.80 --unrealized 0.90
+```
+
+**Weekly review:**
+```
+oc-db note --agent leo --cat weekly-review \
+  --title "Week ending YYYY-MM-DD" \
+  --content "P&L: +$1.80 | Win rate: 60% | Trades: 5 | ..."
+```
+
+**Check open trades:**
+```
+oc-db trade list --trader leo --status open
+```
+
+**P&L summary:**
+```
+oc-db pnl --trader leo
+```
 
 ## Discord Reporting
 Post to #trade-log after every entry or exit.

@@ -1,0 +1,673 @@
+#!/usr/bin/env python3
+"""
+oc-db — OpenClaw Database CLI
+Agents use this to read and write the SQLite database instead of Obsidian.
+
+Database path: $OPENCLAW_HOME/openclaw.db  (default: ~/.openclaw/openclaw.db)
+
+USAGE EXAMPLES
+
+  # Trade management
+  oc-db trade open  --trader max --pair BTC-USD --side buy --size 4.50 \
+                    --entry 95000 --stop 92000 --target 98000 \
+                    --strategy the-sniper --aria bullish --reed neutral \
+                    --rationale "Breakout above 94k resistance"
+  oc-db trade close --id 1 --exit 97800 --status won --notes "Hit target"
+  oc-db trade list  --trader max --status open
+  oc-db trade list  --trader max  (all trades)
+
+  # Bankroll snapshots (take after every trade + daily)
+  oc-db snap --trader max --balance 52.50 --unrealized 2.50
+
+  # Risk events (Dylon)
+  oc-db risk open   --trader max --light red --violation "Stop loss missing on BTC-USD"
+  oc-db risk close  --id 3 --notes "Stop added"
+  oc-db risk status                  (current light for all traders)
+  oc-db risk list   --open           (only unresolved)
+
+  # Agent notes — replaces all Obsidian vault files
+  oc-db note --agent hana --cat backtest --title "BTC-USD 6mo backtest" \
+             --content "Net return: +18.2% ..."
+  oc-db note --agent hana --cat prospector --title "2026-02-28 Scan" \
+             --content "$(cat /tmp/prospector.txt)"
+  oc-db note list --agent hana --cat prospector --limit 1  (latest)
+  oc-db note get  --id 42
+
+  # Agent memory — key-value state
+  oc-db mem set --agent nicole --key open_positions --value "Max: 1 BTC long @ 95k"
+  oc-db mem get --agent nicole --key open_positions
+  oc-db mem get --agent nicole           (all keys for this agent)
+  oc-db mem del --agent nicole --key open_positions
+
+  # Weekly summaries
+  oc-db summary --reporter dylon --trader all --week 2026-02-28 \
+                --type risk --pnl -2.50 --wins 3 --losses 2 \
+                --content "All traders within limits..."
+  oc-db summary list --reporter dylon --limit 4
+
+  # Heartbeat log
+  oc-db heartbeat ok
+  oc-db heartbeat action --summary "BTC position approaching stop"
+  oc-db heartbeat list --limit 10
+
+  # P&L summary
+  oc-db pnl               (all traders)
+  oc-db pnl --trader max
+
+  # Raw read-only SQL (SELECT only)
+  oc-db query "SELECT * FROM open_trades"
+  oc-db query "SELECT * FROM trader_pnl"
+  oc-db query "SELECT * FROM daily_bankroll WHERE trader='max'"
+"""
+
+import argparse
+import json
+import os
+import sqlite3
+import sys
+from datetime import datetime, timezone
+
+# ── DB path ──────────────────────────────────────────────────────────────────
+
+def db_path():
+    home = os.environ.get('OPENCLAW_HOME', os.path.expanduser('~/.openclaw'))
+    return os.path.join(home, 'openclaw.db')
+
+SCHEMA = """
+PRAGMA journal_mode = WAL;
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE IF NOT EXISTS trades (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  trader TEXT NOT NULL, pair TEXT NOT NULL, side TEXT NOT NULL,
+  size_usd REAL NOT NULL, entry_price REAL NOT NULL,
+  exit_price REAL, stop_loss REAL, take_profit REAL,
+  status TEXT NOT NULL DEFAULT 'open',
+  strategy TEXT, pnl REAL, pnl_pct REAL,
+  aria_signal TEXT, reed_signal TEXT, sage_signal TEXT,
+  rationale TEXT, mode TEXT NOT NULL DEFAULT 'paper',
+  opened_at TEXT NOT NULL, closed_at TEXT, notes TEXT
+);
+
+CREATE TABLE IF NOT EXISTS bankroll_snapshots (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  trader TEXT NOT NULL, balance REAL NOT NULL,
+  unrealized_pnl REAL NOT NULL DEFAULT 0,
+  recorded_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS risk_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  trader TEXT NOT NULL, light TEXT NOT NULL, violation TEXT NOT NULL,
+  resolved INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL, resolved_at TEXT, notes TEXT
+);
+
+CREATE TABLE IF NOT EXISTS agent_notes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  agent TEXT NOT NULL, category TEXT NOT NULL, title TEXT NOT NULL,
+  content TEXT NOT NULL, asset TEXT, trader TEXT, created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS agent_memory (
+  agent TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL,
+  updated_at TEXT NOT NULL, PRIMARY KEY (agent, key)
+);
+
+CREATE TABLE IF NOT EXISTS weekly_summaries (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  reporter TEXT NOT NULL, trader TEXT NOT NULL, week_ending TEXT NOT NULL,
+  report_type TEXT NOT NULL, content TEXT NOT NULL,
+  starting_bankroll REAL, ending_bankroll REAL, pnl REAL,
+  win_count INTEGER, loss_count INTEGER, max_drawdown_pct REAL,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS heartbeats (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  status TEXT NOT NULL, summary TEXT, recorded_at TEXT NOT NULL
+);
+
+CREATE VIEW IF NOT EXISTS open_trades AS
+  SELECT * FROM trades WHERE status = 'open' ORDER BY opened_at DESC;
+
+CREATE VIEW IF NOT EXISTS trader_pnl AS
+  SELECT trader,
+    COUNT(*) AS total_trades,
+    SUM(CASE WHEN status='won'  THEN 1 ELSE 0 END) AS wins,
+    SUM(CASE WHEN status='lost' THEN 1 ELSE 0 END) AS losses,
+    ROUND(SUM(CASE WHEN pnl IS NOT NULL THEN pnl ELSE 0 END),2) AS total_pnl,
+    ROUND(CAST(SUM(CASE WHEN status='won' THEN 1 ELSE 0 END) AS REAL) /
+      NULLIF(SUM(CASE WHEN status IN ('won','lost') THEN 1 ELSE 0 END),0)*100,1)
+      AS win_rate_pct
+  FROM trades GROUP BY trader;
+
+CREATE VIEW IF NOT EXISTS latest_bankroll AS
+  SELECT trader, balance, unrealized_pnl, recorded_at
+  FROM bankroll_snapshots
+  WHERE id IN (SELECT MAX(id) FROM bankroll_snapshots GROUP BY trader);
+
+CREATE VIEW IF NOT EXISTS open_risk AS
+  SELECT * FROM risk_events WHERE resolved=0 ORDER BY created_at DESC;
+
+CREATE VIEW IF NOT EXISTS daily_bankroll AS
+  SELECT trader, DATE(recorded_at) AS day,
+    AVG(balance) AS avg_balance, MAX(balance) AS peak, MIN(balance) AS low
+  FROM bankroll_snapshots
+  WHERE recorded_at >= DATE('now','-30 days')
+  GROUP BY trader, DATE(recorded_at)
+  ORDER BY trader, day;
+"""
+
+def get_conn():
+    path = db_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    conn = sqlite3.connect(path)
+    conn.row_factory = sqlite3.Row
+    conn.executescript(SCHEMA)
+    return conn
+
+def now_utc():
+    return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+def rows_to_list(rows):
+    return [dict(r) for r in rows]
+
+def out(data):
+    if isinstance(data, (list, dict)):
+        print(json.dumps(data, indent=2))
+    else:
+        print(data)
+
+# ── trade ─────────────────────────────────────────────────────────────────────
+
+def cmd_trade(args):
+    conn = get_conn()
+    if args.trade_cmd == 'open':
+        cur = conn.execute(
+            """INSERT INTO trades
+               (trader,pair,side,size_usd,entry_price,stop_loss,take_profit,
+                strategy,aria_signal,reed_signal,sage_signal,rationale,mode,opened_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (args.trader, args.pair, args.side, args.size, args.entry,
+             args.stop, args.target, args.strategy,
+             args.aria, args.reed, args.sage, args.rationale,
+             args.mode or 'paper', now_utc())
+        )
+        conn.commit()
+        print(f"Trade opened. ID: {cur.lastrowid}")
+
+    elif args.trade_cmd == 'close':
+        row = conn.execute('SELECT * FROM trades WHERE id=?', (args.id,)).fetchone()
+        if not row:
+            print(f"Trade {args.id} not found", file=sys.stderr); sys.exit(1)
+        entry = row['entry_price']
+        exit_p = args.exit
+        size = row['size_usd']
+        side = row['side']
+        pnl = round((exit_p - entry) / entry * size * (1 if side == 'buy' else -1), 2)
+        pnl_pct = round((exit_p - entry) / entry * 100 * (1 if side == 'buy' else -1), 2)
+        conn.execute(
+            """UPDATE trades SET exit_price=?,status=?,pnl=?,pnl_pct=?,
+               closed_at=?,notes=COALESCE(?,notes) WHERE id=?""",
+            (exit_p, args.status or 'won', pnl, pnl_pct, now_utc(), args.notes, args.id)
+        )
+        conn.commit()
+        sign = '+' if pnl >= 0 else ''
+        print(f"Trade {args.id} closed. P&L: {sign}${pnl} ({sign}{pnl_pct}%)")
+
+    elif args.trade_cmd == 'list':
+        q = 'SELECT * FROM trades WHERE 1=1'
+        params = []
+        if args.trader: q += ' AND trader=?'; params.append(args.trader)
+        if args.status: q += ' AND status=?'; params.append(args.status)
+        q += ' ORDER BY opened_at DESC LIMIT ?'
+        params.append(args.limit or 20)
+        out(rows_to_list(conn.execute(q, params).fetchall()))
+
+    conn.close()
+
+# ── snap ──────────────────────────────────────────────────────────────────────
+
+def cmd_snap(args):
+    conn = get_conn()
+    conn.execute(
+        'INSERT INTO bankroll_snapshots (trader,balance,unrealized_pnl,recorded_at) VALUES (?,?,?,?)',
+        (args.trader, args.balance, args.unrealized or 0, now_utc())
+    )
+    conn.commit()
+    conn.close()
+    print(f"Snapshot recorded: {args.trader} ${args.balance}")
+
+# ── risk ──────────────────────────────────────────────────────────────────────
+
+LIGHTS = ('green', 'yellow', 'red')
+
+def _current_light(conn, trader=None):
+    q = 'SELECT light FROM open_risk'
+    params = []
+    if trader:
+        q += ' WHERE trader=?'; params.append(trader)
+    rows = conn.execute(q, params).fetchall()
+    if not rows:
+        return 'green'
+    lights = [r['light'].lower() for r in rows]
+    for l in reversed(LIGHTS):
+        if l in lights:
+            return l
+    return 'green'
+
+def _write_risk_state(conn):
+    """Write current light to each trader's RISK_STATE.md workspace file."""
+    home = os.environ.get('OPENCLAW_HOME', os.path.expanduser('~/.openclaw'))
+    ws = os.path.join(home, 'workspace', 'agents', 'dylon', 'RISK_STATE.md')
+    traders = ['max', 'leo', 'zara', 'kai']
+    lines = [f'Last updated: {now_utc()}', '']
+    overall = 'green'
+    for t in traders:
+        light = _current_light(conn, t)
+        if LIGHTS.index(light) > LIGHTS.index(overall):
+            overall = light
+        open_evts = conn.execute(
+            "SELECT violation FROM open_risk WHERE trader=?", (t,)
+        ).fetchall()
+        detail = f' — {open_evts[0]["violation"]}' if open_evts else ''
+        lines.append(f'{t.capitalize()}: {light.capitalize()}{detail}')
+    lines = [f'Light: {overall.capitalize()}', ''] + lines
+    try:
+        os.makedirs(os.path.dirname(ws), exist_ok=True)
+        with open(ws, 'w') as f:
+            f.write('\n'.join(lines) + '\n')
+    except OSError:
+        pass  # workspace may not exist yet; not fatal
+
+def cmd_risk(args):
+    conn = get_conn()
+    if args.risk_cmd == 'open':
+        cur = conn.execute(
+            'INSERT INTO risk_events (trader,light,violation,created_at) VALUES (?,?,?,?)',
+            (args.trader, args.light, args.violation, now_utc())
+        )
+        conn.commit()
+        _write_risk_state(conn)
+        print(f"Risk event opened. ID: {cur.lastrowid}  [{args.light.upper()}] {args.trader}: {args.violation}")
+
+    elif args.risk_cmd == 'close':
+        conn.execute(
+            'UPDATE risk_events SET resolved=1,resolved_at=?,notes=COALESCE(?,notes) WHERE id=?',
+            (now_utc(), args.notes, args.id)
+        )
+        conn.commit()
+        _write_risk_state(conn)
+        print(f"Risk event {args.id} resolved.")
+
+    elif args.risk_cmd == 'status':
+        traders = ['max', 'leo', 'zara', 'kai']
+        result = {}
+        overall = 'green'
+        for t in traders:
+            light = _current_light(conn, t)
+            if LIGHTS.index(light) > LIGHTS.index(overall):
+                overall = light
+            result[t] = light
+        result['overall'] = overall
+        out(result)
+
+    elif args.risk_cmd == 'list':
+        q = 'SELECT * FROM risk_events WHERE 1=1'
+        params = []
+        if args.open: q += ' AND resolved=0'
+        if args.trader: q += ' AND trader=?'; params.append(args.trader)
+        q += ' ORDER BY created_at DESC LIMIT 20'
+        out(rows_to_list(conn.execute(q, params).fetchall()))
+
+    conn.close()
+
+# ── note ──────────────────────────────────────────────────────────────────────
+
+def cmd_note(args):
+    conn = get_conn()
+    if args.note_cmd == 'write' or args.note_cmd is None:
+        cur = conn.execute(
+            'INSERT INTO agent_notes (agent,category,title,content,asset,trader,created_at) VALUES (?,?,?,?,?,?,?)',
+            (args.agent, args.cat, args.title, args.content, args.asset, args.trader, now_utc())
+        )
+        conn.commit()
+        conn.close()
+        print(f"Note stored. ID: {cur.lastrowid}  [{args.agent}/{args.cat}] {args.title}")
+
+    elif args.note_cmd == 'list':
+        q = 'SELECT id,agent,category,title,created_at FROM agent_notes WHERE 1=1'
+        params = []
+        if args.agent:    q += ' AND agent=?';    params.append(args.agent)
+        if args.cat:      q += ' AND category=?'; params.append(args.cat)
+        if args.trader:   q += ' AND trader=?';   params.append(args.trader)
+        q += f' ORDER BY created_at DESC LIMIT {args.limit or 10}'
+        out(rows_to_list(conn.execute(q, params).fetchall()))
+        conn.close()
+
+    elif args.note_cmd == 'get':
+        row = conn.execute('SELECT * FROM agent_notes WHERE id=?', (args.id,)).fetchone()
+        conn.close()
+        if not row:
+            print(f"Note {args.id} not found", file=sys.stderr); sys.exit(1)
+        r = dict(row)
+        print(f"[{r['id']}] {r['agent']}/{r['category']} — {r['title']}")
+        print(f"Created: {r['created_at']}")
+        print()
+        print(r['content'])
+
+# ── mem ───────────────────────────────────────────────────────────────────────
+
+def cmd_mem(args):
+    conn = get_conn()
+    if args.mem_cmd == 'set':
+        conn.execute(
+            'INSERT OR REPLACE INTO agent_memory (agent,key,value,updated_at) VALUES (?,?,?,?)',
+            (args.agent, args.key, args.value, now_utc())
+        )
+        conn.commit()
+        conn.close()
+        print(f"Memory set: {args.agent}.{args.key}")
+
+    elif args.mem_cmd == 'get':
+        if args.key:
+            row = conn.execute(
+                'SELECT value FROM agent_memory WHERE agent=? AND key=?',
+                (args.agent, args.key)
+            ).fetchone()
+            conn.close()
+            print(row['value'] if row else '')
+        else:
+            rows = conn.execute(
+                'SELECT key,value,updated_at FROM agent_memory WHERE agent=? ORDER BY key',
+                (args.agent,)
+            ).fetchall()
+            conn.close()
+            out(rows_to_list(rows))
+
+    elif args.mem_cmd == 'del':
+        conn.execute('DELETE FROM agent_memory WHERE agent=? AND key=?', (args.agent, args.key))
+        conn.commit()
+        conn.close()
+        print(f"Memory deleted: {args.agent}.{args.key}")
+
+# ── summary ───────────────────────────────────────────────────────────────────
+
+def cmd_summary(args):
+    conn = get_conn()
+    if args.summary_cmd == 'write' or args.summary_cmd is None:
+        cur = conn.execute(
+            """INSERT INTO weekly_summaries
+               (reporter,trader,week_ending,report_type,content,
+                starting_bankroll,ending_bankroll,pnl,win_count,loss_count,max_drawdown_pct,created_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (args.reporter, args.trader, args.week, args.type, args.content,
+             args.start_bankroll, args.end_bankroll, args.pnl,
+             args.wins, args.losses, args.max_dd, now_utc())
+        )
+        conn.commit()
+        conn.close()
+        print(f"Summary stored. ID: {cur.lastrowid}  [{args.reporter}] Week ending {args.week}")
+
+    elif args.summary_cmd == 'list':
+        q = 'SELECT id,reporter,trader,week_ending,report_type,pnl,created_at FROM weekly_summaries WHERE 1=1'
+        params = []
+        if args.reporter: q += ' AND reporter=?'; params.append(args.reporter)
+        q += f' ORDER BY created_at DESC LIMIT {args.limit or 8}'
+        out(rows_to_list(conn.execute(q, params).fetchall()))
+        conn.close()
+
+    elif args.summary_cmd == 'get':
+        row = conn.execute('SELECT * FROM weekly_summaries WHERE id=?', (args.id,)).fetchone()
+        conn.close()
+        if not row:
+            print(f"Summary {args.id} not found", file=sys.stderr); sys.exit(1)
+        r = dict(row)
+        print(f"[{r['id']}] {r['reporter']}/{r['report_type']} — Week {r['week_ending']}")
+        print()
+        print(r['content'])
+
+# ── heartbeat ─────────────────────────────────────────────────────────────────
+
+def cmd_heartbeat(args):
+    conn = get_conn()
+    if args.hb_cmd in ('ok', 'action'):
+        conn.execute(
+            'INSERT INTO heartbeats (status,summary,recorded_at) VALUES (?,?,?)',
+            (args.hb_cmd, args.summary if args.hb_cmd == 'action' else None, now_utc())
+        )
+        conn.commit()
+        conn.close()
+        print(f"Heartbeat logged: {args.hb_cmd}")
+    elif args.hb_cmd == 'list':
+        rows = conn.execute(
+            f'SELECT * FROM heartbeats ORDER BY recorded_at DESC LIMIT {args.limit or 10}'
+        ).fetchall()
+        conn.close()
+        out(rows_to_list(rows))
+
+# ── pnl ───────────────────────────────────────────────────────────────────────
+
+def cmd_pnl(args):
+    conn = get_conn()
+    q = 'SELECT * FROM trader_pnl'
+    params = []
+    if args.trader:
+        q += ' WHERE trader=?'; params.append(args.trader)
+    rows = conn.execute(q, params).fetchall()
+    # also grab latest bankroll
+    for row in rows:
+        d = dict(row)
+        snap = conn.execute(
+            'SELECT balance, unrealized_pnl FROM latest_bankroll WHERE trader=?',
+            (d['trader'],)
+        ).fetchone()
+        if snap:
+            d['current_bankroll'] = snap['balance']
+            d['unrealized_pnl']   = snap['unrealized_pnl']
+        open_count = conn.execute(
+            "SELECT COUNT(*) AS n FROM trades WHERE trader=? AND status='open'",
+            (d['trader'],)
+        ).fetchone()['n']
+        d['open_positions'] = open_count
+        out(d)
+    conn.close()
+
+# ── query ─────────────────────────────────────────────────────────────────────
+
+def cmd_query(args):
+    sql = args.sql.strip()
+    if not sql.upper().startswith('SELECT'):
+        print("Only SELECT queries are allowed.", file=sys.stderr); sys.exit(1)
+    conn = get_conn()
+    rows = conn.execute(sql).fetchall()
+    conn.close()
+    out(rows_to_list(rows))
+
+# ── init ──────────────────────────────────────────────────────────────────────
+
+def cmd_init(args):
+    conn = get_conn()
+    conn.close()
+    print(f"Database initialized: {db_path()}")
+
+# ── CLI ───────────────────────────────────────────────────────────────────────
+
+def main():
+    p = argparse.ArgumentParser(prog='oc-db', description='OpenClaw Database CLI')
+    sub = p.add_subparsers(dest='cmd')
+
+    # trade
+    t = sub.add_parser('trade'); ts = t.add_subparsers(dest='trade_cmd')
+    to = ts.add_parser('open')
+    to.add_argument('--trader',   required=True)
+    to.add_argument('--pair',     required=True)
+    to.add_argument('--side',     required=True, choices=['buy','sell'])
+    to.add_argument('--size',     required=True, type=float)
+    to.add_argument('--entry',    required=True, type=float)
+    to.add_argument('--stop',     type=float)
+    to.add_argument('--target',   type=float)
+    to.add_argument('--strategy')
+    to.add_argument('--aria',     choices=['bullish','bearish','neutral'])
+    to.add_argument('--reed',     choices=['bullish','bearish','neutral'])
+    to.add_argument('--sage',     choices=['bullish','bearish','neutral'])
+    to.add_argument('--rationale')
+    to.add_argument('--mode',     default='paper', choices=['paper','live'])
+
+    tc = ts.add_parser('close')
+    tc.add_argument('--id',     required=True, type=int)
+    tc.add_argument('--exit',   required=True, type=float)
+    tc.add_argument('--status', default='won', choices=['won','lost','cancelled'])
+    tc.add_argument('--notes')
+
+    tl = ts.add_parser('list')
+    tl.add_argument('--trader')
+    tl.add_argument('--status')
+    tl.add_argument('--limit', type=int, default=20)
+
+    # snap
+    sn = sub.add_parser('snap')
+    sn.add_argument('--trader',     required=True)
+    sn.add_argument('--balance',    required=True, type=float)
+    sn.add_argument('--unrealized', type=float, default=0)
+
+    # risk
+    r = sub.add_parser('risk'); rs = r.add_subparsers(dest='risk_cmd')
+    ro = rs.add_parser('open')
+    ro.add_argument('--trader',    required=True)
+    ro.add_argument('--light',     required=True, choices=['yellow','red'])
+    ro.add_argument('--violation', required=True)
+
+    rc = rs.add_parser('close')
+    rc.add_argument('--id',    required=True, type=int)
+    rc.add_argument('--notes')
+
+    rs.add_parser('status')
+
+    rl = rs.add_parser('list')
+    rl.add_argument('--trader')
+    rl.add_argument('--open', action='store_true')
+
+    # note
+    n = sub.add_parser('note'); ns = n.add_subparsers(dest='note_cmd')
+    nw = ns.add_parser('write')
+    nw.add_argument('--agent',   required=True)
+    nw.add_argument('--cat',     required=True)
+    nw.add_argument('--title',   required=True)
+    nw.add_argument('--content', required=True)
+    nw.add_argument('--asset')
+    nw.add_argument('--trader')
+
+    # 'oc-db note --agent ...' shorthand (no subcommand = write)
+    n.add_argument('--agent')
+    n.add_argument('--cat')
+    n.add_argument('--title')
+    n.add_argument('--content')
+    n.add_argument('--asset')
+    n.add_argument('--trader')
+
+    nl = ns.add_parser('list')
+    nl.add_argument('--agent')
+    nl.add_argument('--cat')
+    nl.add_argument('--trader')
+    nl.add_argument('--limit', type=int, default=10)
+
+    ng = ns.add_parser('get')
+    ng.add_argument('--id', required=True, type=int)
+
+    # mem
+    m = sub.add_parser('mem'); ms = m.add_subparsers(dest='mem_cmd')
+    mset = ms.add_parser('set')
+    mset.add_argument('--agent', required=True)
+    mset.add_argument('--key',   required=True)
+    mset.add_argument('--value', required=True)
+
+    mget = ms.add_parser('get')
+    mget.add_argument('--agent', required=True)
+    mget.add_argument('--key')
+
+    mdel = ms.add_parser('del')
+    mdel.add_argument('--agent', required=True)
+    mdel.add_argument('--key',   required=True)
+
+    # summary
+    s = sub.add_parser('summary'); ss = s.add_subparsers(dest='summary_cmd')
+    sw = ss.add_parser('write')
+    sw.add_argument('--reporter', required=True)
+    sw.add_argument('--trader',   required=True)
+    sw.add_argument('--week',     required=True)
+    sw.add_argument('--type',     required=True)
+    sw.add_argument('--content',  required=True)
+    sw.add_argument('--start-bankroll', dest='start_bankroll', type=float)
+    sw.add_argument('--end-bankroll',   dest='end_bankroll',   type=float)
+    sw.add_argument('--pnl',       type=float)
+    sw.add_argument('--wins',      type=int)
+    sw.add_argument('--losses',    type=int)
+    sw.add_argument('--max-dd',    dest='max_dd', type=float)
+
+    # shorthand (no subcommand = write)
+    s.add_argument('--reporter')
+    s.add_argument('--trader')
+    s.add_argument('--week')
+    s.add_argument('--type')
+    s.add_argument('--content')
+    s.add_argument('--start-bankroll', dest='start_bankroll', type=float)
+    s.add_argument('--end-bankroll',   dest='end_bankroll',   type=float)
+    s.add_argument('--pnl',       type=float)
+    s.add_argument('--wins',      type=int)
+    s.add_argument('--losses',    type=int)
+    s.add_argument('--max-dd',    dest='max_dd', type=float)
+
+    sl = ss.add_parser('list')
+    sl.add_argument('--reporter')
+    sl.add_argument('--limit', type=int, default=8)
+
+    sg = ss.add_parser('get')
+    sg.add_argument('--id', required=True, type=int)
+
+    # heartbeat
+    h = sub.add_parser('heartbeat'); hs = h.add_subparsers(dest='hb_cmd')
+    hs.add_parser('ok')
+    ha = hs.add_parser('action')
+    ha.add_argument('--summary', required=True)
+    hl = hs.add_parser('list')
+    hl.add_argument('--limit', type=int, default=10)
+
+    # pnl
+    pnl = sub.add_parser('pnl')
+    pnl.add_argument('--trader')
+
+    # query
+    q = sub.add_parser('query')
+    q.add_argument('sql')
+
+    # init
+    sub.add_parser('init')
+
+    args = p.parse_args()
+
+    dispatch = {
+        'trade':     cmd_trade,
+        'snap':      cmd_snap,
+        'risk':      cmd_risk,
+        'note':      cmd_note,
+        'mem':       cmd_mem,
+        'summary':   cmd_summary,
+        'heartbeat': cmd_heartbeat,
+        'pnl':       cmd_pnl,
+        'query':     cmd_query,
+        'init':      cmd_init,
+    }
+
+    if not args.cmd:
+        p.print_help(); sys.exit(0)
+
+    fn = dispatch.get(args.cmd)
+    if fn:
+        fn(args)
+    else:
+        p.print_help(); sys.exit(1)
+
+if __name__ == '__main__':
+    main()
