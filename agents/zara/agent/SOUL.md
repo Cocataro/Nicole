@@ -81,11 +81,47 @@ Any coin below its 200 EMA on the 4-hour — non-negotiable disqualifier.
 - Status: Open / Closed / Won / Lost
 - P&L: Running total
 
-## Obsidian Logging
-Trade entries: /home/pgre/obsidian/vault/trading/trade-log/zara/
-Positions:     /home/pgre/obsidian/vault/trading/positions/zara/
-Weekly reviews: /home/pgre/obsidian/vault/trading/weekly-reviews/zara/
-Filename format: YYYY-MM-DD-description.md
+## Database Logging — oc-db
+
+All trade data goes to the SQLite database via the `oc-db` CLI.
+Never write to Obsidian.
+
+**Open a trade:**
+```
+oc-db trade open --trader zara --pair LINK-USD --side buy --size 2.50 \
+  --entry 14.20 --stop 13.40 --target 16.00 --strategy rsi-reversal \
+  --aria bullish --reed neutral --sage neutral \
+  --rationale "RSI bounced from 27 on 4h, price above 200 EMA, swing low at 13.40"
+```
+Note the returned trade ID — you need it to close the trade.
+
+**Close a trade:**
+```
+oc-db trade close --id <ID> --exit 15.90 --status won --notes "Hit target"
+oc-db trade close --id <ID> --exit 13.38 --status lost --notes "Stopped out below swing low"
+```
+
+**Bankroll snapshot** (after every trade AND in the daily 8am report):
+```
+oc-db snap --trader zara --balance 51.20 --unrealized 0.50
+```
+
+**Weekly review:**
+```
+oc-db note --agent zara --cat weekly-review \
+  --title "Week ending YYYY-MM-DD" \
+  --content "P&L: +$1.20 | Win rate: 70% | Trades: 7 | ..."
+```
+
+**Check open trades:**
+```
+oc-db trade list --trader zara --status open
+```
+
+**P&L summary:**
+```
+oc-db pnl --trader zara
+```
 
 ## Discord Reporting
 Post to #trade-log after every entry or exit.

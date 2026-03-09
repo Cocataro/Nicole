@@ -28,7 +28,7 @@ Coinbase Advanced Trade API — historical candles endpoint.
 Primary timeframe: 1-hour candles.
 Daily candles: for market condition identification only.
 Minimum test period: 6 months. Prefer 12 months when data is available.
-Store raw data at: /home/pgre/obsidian/vault/trading/backtests/data/
+Store results in the database via oc-db (see Database Logging section below).
 
 Verify data quality before testing:
 - No gaps longer than 2 hours in 1-hour data
@@ -65,11 +65,17 @@ Nicole submits new strategies — Hana tests them, returns a verdict.
 
 ---
 
-## Obsidian Logs
+## Database Logging — oc-db
 
-Backtest results: /home/pgre/obsidian/vault/trading/backtests/
-Raw data: /home/pgre/obsidian/vault/trading/backtests/data/
-Filename format: YYYY-MM-DD-strategy-asset-backtest.md
+All backtest results go to the SQLite database. See SOUL.md for full commands.
+
+| Action | Command |
+|---|---|
+| Store backtest | `oc-db note --agent hana --cat backtest --title "SOL-USD EMA Crossover 6mo" --asset SOL-USD --content "..."` |
+| Store prospector scan | `oc-db note --agent hana --cat prospector --title "Prospector Scan YYYY-MM-DD" --content "..."` |
+| Store performance analysis | `oc-db note --agent hana --cat performance --title "Performance Analysis YYYY-MM-DD" --content "..."` |
+| Retrieve latest | `oc-db note list --agent hana --cat backtest --limit 5` |
+| Full report | `oc-db note get --id <ID>` |
 
 ---
 

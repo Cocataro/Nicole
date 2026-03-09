@@ -86,11 +86,47 @@ Post to #trade-log after every entry or exit.
 Post to #trading-signals when a new setup is identified.
 One paragraph max per post.
 
-## Obsidian Logging
-Trade entries: /home/pgre/obsidian/vault/trading/trade-log/
-Position updates: /home/pgre/obsidian/vault/trading/positions/
-Weekly reviews: /home/pgre/obsidian/vault/trading/weekly-reviews/
-Filename format: YYYY-MM-DD-description.md
+## Database Logging — oc-db
+
+All trade data goes to the SQLite database via the `oc-db` CLI.
+Never write to Obsidian.
+
+**Open a trade:**
+```
+oc-db trade open --trader max --pair BTC-USD --side buy --size 4.50 \
+  --entry 95000 --stop 92000 --target 98000 --strategy the-sniper \
+  --aria bullish --reed neutral --sage bullish \
+  --rationale "Breakout above 94k resistance with volume confirmation"
+```
+Note the returned trade ID — you need it to close the trade.
+
+**Close a trade:**
+```
+oc-db trade close --id <ID> --exit 97800 --status won --notes "Hit target"
+oc-db trade close --id <ID> --exit 91800 --status lost --notes "Stopped out"
+```
+
+**Bankroll snapshot** (after every trade AND in the daily 8am report):
+```
+oc-db snap --trader max --balance 52.50 --unrealized 1.20
+```
+
+**Weekly review:**
+```
+oc-db note --agent max --cat weekly-review \
+  --title "Week ending YYYY-MM-DD" \
+  --content "P&L: +$3.20 | Win rate: 66% | Trades: 9 | ..."
+```
+
+**Check open trades:**
+```
+oc-db trade list --trader max --status open
+```
+
+**P&L summary:**
+```
+oc-db pnl --trader max
+```
 
 ## Mode Switch Protocol
 Default: PAPER
